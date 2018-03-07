@@ -1,0 +1,14 @@
+{
+  "name": "flow-types-viewer",
+  "version": "0.1.0",
+  "description": "Util to view flow types in project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Nikolay Ryabov",
+  "license": "ISC",
+  "dependencies": {
+    "flow-bin": "^0.66.0"
+  }
+}
