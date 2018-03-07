@@ -1,3 +1,6 @@
 .idea
+.cache
 node_modules
 temp
+build
+package-lock.json
