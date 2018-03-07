@@ -4,7 +4,9 @@
   "description": "Util to view flow types in project",
   "main": "index.js",
   "scripts": {
-    "build": "parcel build viewer.js -d ./build"
+    "start": "node index.js",
+    "build": "npm run start && parcel build viewer.js -d ./build",
+    "watch": "parcel watch viewer.js -d ./build"
   },
   "author": "Nikolay Ryabov",
   "license": "ISC",
@@ -17,6 +19,7 @@
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-env": "^1.6.1",
-    "babel-preset-react": "^6.24.1"
+    "babel-preset-react": "^6.24.1",
+    "rimraf": "^2.6.2"
   }
 }
