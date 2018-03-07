@@ -88,24 +88,34 @@ const typeToObject = (type, path, files) => {
         type: 'primitive',
         value: 'boolean'
       };
+    case 'StringLiteralTypeAnnotation':
+      return {
+        type: 'primitive',
+        value: 'stringLiteral'
+      };
     case 'GenericTypeAnnotation':
       return {
-        type: 'generic',
+        type: type.typeParameters ? 'generic' : 'type',
         declarationId: getTypeDeclarationId(type.id && type.id.name, path, files),
-        data: type.typeParameters ? mapTypes(type.typeParameters.params) : null
+        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null
       };
     case 'IntersectionTypeAnnotation':
       return {
         type: 'intersection',
-        data: mapTypes(type.types)
+        value: mapTypes(type.types)
+      };
+    case 'UnionTypeAnnotation':
+      return {
+        type: 'union',
+        value: mapTypes(type.types)
       };
     case 'ObjectTypeAnnotation':
       return {
         type: 'object',
-        data: type.properties.map((prop) => ({
+        value: type.properties.map((prop) => ({
           optional: prop.optional,
           name: prop.key.name,
-          data: typeToObject(prop.value, path, files)
+          value: typeToObject(prop.value, path, files)
         }))
       };
     case 'ExistsTypeAnnotation':
