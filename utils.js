@@ -48,26 +48,40 @@ const getDetailedType = (typeName, path, files) => {
   const root = getTypeDeclaration(typeName, path, files);
 
   if (root) {
-    const name = (root.declaration.right.type.id && root.declaration.right.type.id.name) || typeName;
+    const key = `${typeName}:${root.path}`;
 
-    return Object.assign(typeToObject(root.declaration.right, root.path, files), {name});
+    if (getDetailedType.memory[key] === undefined) {
+      const name = (root.declaration.right.type.id && root.declaration.right.type.id.name) || typeName;
+
+      getDetailedType.memory[key] = null;
+
+      const detailedType = Object.assign(
+        typeToObject(root.declaration.right, root.path, files),
+        {
+          name,
+          path: root.path
+        }
+      );
+
+      getDetailedType.memory[key] = detailedType;
+
+      return detailedType;
+    } else {
+      return getDetailedType.memory[key];
+    }
   } else {
     return null;
   }
 };
 
+getDetailedType.memory = {};
+
 const getTypeDeclarationId = (typeName, path, files) => {
-  const key = `${typeName}:${path}`;
+  const detailedType = getDetailedType(typeName, path, files);
 
-  if (getTypeDeclarationId.memory[key] === undefined) {
-    getTypeDeclarationId.memory[key] = null;
-    getTypeDeclarationId.memory[key] = getDetailedType(typeName, path, files);
-  }
-
-  return key;
+  return detailedType ? `${detailedType.name}:${detailedType.path}` : null;
 };
 
-getTypeDeclarationId.memory = {};
 
 const typeToObject = (type, path, files) => {
   const mapTypes = (types) => types.map((type) => typeToObject(type, path, files));
@@ -125,10 +139,16 @@ const typeToObject = (type, path, files) => {
   }
 };
 
+const getDeclarations = (paths, files) => ({
+  types: paths.reduce((acc, path) => {
+    acc.push(
+      ...getTypesDeclarations(path, files)
+        .map((type) => getDetailedType(type, path, files))
+    );
 
-const getDeclarations = (path, files) => ({
-  types: getTypesDeclarations(path, files).map((type) => getDetailedType(type, path, files)),
-  declarations: getTypeDeclarationId.memory
+    return acc;
+  }, []),
+  declarations: getDetailedType.memory
 });
 
 
