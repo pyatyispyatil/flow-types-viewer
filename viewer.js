@@ -1,8 +1,13 @@
-import React, {Component} from 'react';
+import React, {Component, Fragment} from 'react';
 import ReactDOM from 'react-dom';
 
+import styles from './styles.scss';
 
-class Tree extends Component {
+//https://youtrack.jetbrains.com/issue/WEB-21774
+const cs = '{';
+const ce = '}';
+
+class TreeNode extends Component {
   state = {
     collapsed: true
   };
@@ -14,33 +19,56 @@ class Tree extends Component {
 
     switch (node.type) {
       case 'type':
-        return <Tree node={DATA.declarations[node.declarationId]}/>;
-      case 'intersection':
+        return <TreeNode node={DATA.declarations[node.declarationId]}/>;
+      case 'generic':
         return (
           <div>
-            {node.value.map((item) => (
-              <Tree node={item}/>
-            ))}
+            {
+              node.value.map((val) => <TreeNode node={val}/>)
+            }
+          </div>
+        );
+      case 'union':
+        return (
+          <div>
+            {
+              node.value.map((val) => <TreeNode node={val}/>)
+            }
+          </div>
+        );
+      case 'intersection':
+        return (
+          <div className={styles.typeIntersection}>
+            {
+              node.value.map((item) => (
+                <TreeNode node={item} className={styles.typeIntersectionItem}/>
+              ))
+            }
           </div>
         );
       case 'object':
         return (
           <div>
-            {'{'}
-            {node.value.map(({value, name}) => (
-              <div>
-              {`${name}: `}
-              <Tree node={value}/>
-              </div>
-              ))
-            }
-            {'}'}
+            {cs}
+            <div style={{paddingLeft: '14px'}}>
+              {
+                node.value.map(({value, name}) => (
+                  <div className={styles.typeObjectProp}>
+                    <div>{name}</div>
+                    : <TreeNode node={value}/>
+                  </div>
+                ))
+              }
+            </div>
+            {ce}
           </div>
         );
       case 'primitive':
         return node.value;
+      case 'literal':
+        return '|' + node.value;
       default:
-        return 'unhandled';
+        return node.value || 'unhandled';
     }
   }
 
@@ -49,16 +77,20 @@ class Tree extends Component {
     const {node} = this.props;
 
     return (
-      node.name ? (
-        <div>
-          <div className={'tree-view_item'} onClick={this.handleClick}>
-            {node.name}
-          </div>
-          <div>
-            {collapsed ? null : this.renderNode()}
-          </div>
-        </div>
-      ) : (this.renderNode())
+      <div className={styles.treeView}>
+        {
+          node.name && !node.declarationId ? (
+            <Fragment>
+              <div className={styles.nodeTitle} onClick={this.handleClick}>
+                {node.name}
+              </div>
+              <div>
+                {collapsed ? null : this.renderNode()}
+              </div>
+            </Fragment>
+          ) : (this.renderNode())
+        }
+      </div>
     )
   }
 }
@@ -66,7 +98,7 @@ class Tree extends Component {
 ReactDOM.render((
   <div>
     {
-      DATA.types.map((type) => <Tree node={type}/>)
+      DATA.types.map((type) => <TreeNode node={type}/>)
     }
   </div>
 ), document.getElementById('root'));

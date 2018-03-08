@@ -11,8 +11,5 @@ if (index) {
   const declarations = getDeclarations([index], ast);
   const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, JSON.stringify(declarations));
 
-  rm.sync('build');
-
-  fs.mkdirSync('build');
   fs.writeFileSync('./build/index.html', html);
 }

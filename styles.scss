@@ -1,0 +1,24 @@
+div {
+  padding-left: 2px;
+}
+
+.treeView {
+  display: block;
+  cursor: pointer;
+}
+
+.nodeTitle {
+  font-weight: bold;
+}
+
+.typeIntersection {
+  display: flex;
+}
+
+.typeIntersectionItem {
+  padding: 10px;
+}
+
+.typeObjectProp {
+  display: flex;
+}

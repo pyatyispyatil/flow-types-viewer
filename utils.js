@@ -51,12 +51,13 @@ const getDetailedType = (typeName, path, files) => {
     const key = `${typeName}:${root.path}`;
 
     if (getDetailedType.memory[key] === undefined) {
-      const name = (root.declaration.right.type.id && root.declaration.right.type.id.name) || typeName;
+      const {right} = root.declaration;
+      const name = (right.type.id && right.type.id.name) || typeName;
 
       getDetailedType.memory[key] = null;
 
       const detailedType = Object.assign(
-        typeToObject(root.declaration.right, root.path, files),
+        typeToObject(right, root.path, files),
         {
           name,
           path: root.path
@@ -104,14 +105,15 @@ const typeToObject = (type, path, files) => {
       };
     case 'StringLiteralTypeAnnotation':
       return {
-        type: 'primitive',
-        value: 'stringLiteral'
+        type: 'stringLiteral',
+        value: type.value
       };
     case 'GenericTypeAnnotation':
       return {
         type: type.typeParameters ? 'generic' : 'type',
         declarationId: getTypeDeclarationId(type.id && type.id.name, path, files),
-        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null
+        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
+        name: type.id && type.id.name
       };
     case 'IntersectionTypeAnnotation':
       return {
