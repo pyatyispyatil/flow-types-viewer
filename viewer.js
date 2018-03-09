@@ -52,9 +52,9 @@ class TreeNode extends Component {
             {cs}
             <div style={{paddingLeft: '14px'}}>
               {
-                node.value.map(({value, name}) => (
+                node.value.map((value) => (
                   <div className={styles.typeObjectProp}>
-                    <div>{name}</div>
+                    <div>{value.key}</div>
                     : <TreeNode node={value}/>
                   </div>
                 ))

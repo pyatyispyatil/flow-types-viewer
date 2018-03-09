@@ -1,3 +1,23 @@
+const memoize = (fn) => {
+  const memory = [];
+
+  return (...args) => {
+    const similarIndex = memory
+      .findIndex(({args: memoryArgs}) => args
+        .every((arg, index) => arg === memoryArgs[index]));
+
+    if (similarIndex > -1) {
+      return memory[similarIndex].result;
+    } else {
+      const result = fn(...args);
+
+      memory.push({result, args});
+
+      return result;
+    }
+  }
+};
+
 const declarationByTypeName = (...types) => (node) => (
   types.includes(node.id && node.id.name)
   || types.includes(node.declaration && node.declaration.id && node.declaration.id.name)
@@ -7,7 +27,7 @@ const declarationByType = (...types) => (node) => (
 );
 const specifierByLocalName = (...names) => (specifier) => names.includes(specifier.local && specifier.local.name);
 
-const getTypeDeclaration = (typeName, path, files) => {
+const getTypeDeclaration = memoize((typeName, path, files) => {
   const fileASTNodeArray = files[path];
   const localType = fileASTNodeArray.find(declarationByTypeName(typeName));
 
@@ -30,57 +50,68 @@ const getTypeDeclaration = (typeName, path, files) => {
       }
     }
   } else {
+    const declaration = localType.type === 'TypeAlias' ? localType : localType.declaration;
+    const id = declaration.right.type.id;
+    const name = (id && id.name) || typeName;
+    const key = `${name || typeName}:${path}`;
+
     return {
       path,
-      declaration: localType.type === 'TypeAlias' ? localType : localType.declaration
+      key,
+      name,
+      declaration: declaration.right
     };
   }
+});
+
+const getDeepDeclarations = (type, path, files, acc = {}) => {
+  const typeDeclaration = getTypeDeclaration(type, path, files);
+  const detailedType = getDetailedType(typeDeclaration, files);
+
+  if (!acc[typeDeclaration.key]) {
+    acc[typeDeclaration.key] = detailedType;
+
+    if (Array.isArray(detailedType.value)) {
+      return detailedType.value
+        .map((item) => item.type === 'prop' ? item.value : item)
+        .reduce((flatArray, item) => flatArray.concat(Array.isArray(item.value) ? item.value : item), [])
+        .filter(({type}) => type !== 'primitive' && type !== 'stringLiteral')
+        .reduce((acc, item) =>
+            getDeepDeclarations(item.name, item.path, files, acc),
+          acc);
+    }
+  }
+
+  return acc;
 };
 
-const getTypesDeclarations = (path, files) => (
+const getTypesNames = (path, files) => (
   files[path]
     .filter(declarationByType('TypeAlias', 'ExportNamedDeclaration'))
     .map((node) => node.type === 'TypeAlias' ? node : node.declaration)
     .map((node) => node.id.name)
 );
 
-const getDetailedType = (typeName, path, files) => {
-  const root = getTypeDeclaration(typeName, path, files);
+const getDetailedType = memoize((typeDeclaration, files) => {
+  const {declaration, name, path} = typeDeclaration;
 
-  if (root) {
-    const key = `${typeName}:${root.path}`;
+  return Object.assign(
+    typeToObject(declaration, path, files),
+    {name, path}
+  );
+});
 
-    if (getDetailedType.memory[key] === undefined) {
-      const {right} = root.declaration;
-      const name = (right.type.id && right.type.id.name) || typeName;
+const getTypeDeclarationMeta = (typeName, path, files) => {
+  const typeDeclaration = getTypeDeclaration(typeName, path, files);
 
-      getDetailedType.memory[key] = null;
-
-      const detailedType = Object.assign(
-        typeToObject(right, root.path, files),
-        {
-          name,
-          path: root.path
-        }
-      );
-
-      getDetailedType.memory[key] = detailedType;
-
-      return detailedType;
-    } else {
-      return getDetailedType.memory[key];
-    }
+  if (typeDeclaration) {
+    return {
+      declarationId: typeDeclaration.key,
+      path: typeDeclaration.path
+    };
   } else {
-    return null;
+    return {};
   }
-};
-
-getDetailedType.memory = {};
-
-const getTypeDeclarationId = (typeName, path, files) => {
-  const detailedType = getDetailedType(typeName, path, files);
-
-  return detailedType ? `${detailedType.name}:${detailedType.path}` : null;
 };
 
 
@@ -109,12 +140,11 @@ const typeToObject = (type, path, files) => {
         value: type.value
       };
     case 'GenericTypeAnnotation':
-      return {
+      return Object.assign({
         type: type.typeParameters ? 'generic' : 'type',
-        declarationId: getTypeDeclarationId(type.id && type.id.name, path, files),
         value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
         name: type.id && type.id.name
-      };
+      }, getTypeDeclarationMeta(type.id && type.id.name, path, files));
     case 'IntersectionTypeAnnotation':
       return {
         type: 'intersection',
@@ -128,10 +158,9 @@ const typeToObject = (type, path, files) => {
     case 'ObjectTypeAnnotation':
       return {
         type: 'object',
-        value: type.properties.map((prop) => ({
+        value: type.properties.map((prop) => Object.assign(typeToObject(prop.value, path, files), {
           optional: prop.optional,
-          name: prop.key.name,
-          value: typeToObject(prop.value, path, files)
+          key: prop.key.name
         }))
       };
     case 'ExistsTypeAnnotation':
@@ -141,17 +170,17 @@ const typeToObject = (type, path, files) => {
   }
 };
 
-const getDeclarations = (paths, files) => ({
-  types: paths.reduce((acc, path) => {
-    acc.push(
-      ...getTypesDeclarations(path, files)
-        .map((type) => getDetailedType(type, path, files))
-    );
+const getDeclarations = (paths, files) => {
+  const participatingTypes = paths.reduce((acc, path) => acc
+    .concat(
+      getTypesNames(path, files).map((type) => ({type, path}))
+    ), []);
 
-    return acc;
-  }, []),
-  declarations: getDetailedType.memory
-});
+  return {
+    types: participatingTypes.map(({type, path}) => getDetailedType(getTypeDeclaration(type, path, files), files)),
+    declarations: participatingTypes.reduce((acc, {type, path}) => getDeepDeclarations(type, path, files), {})
+  }
+};
 
 
 module.exports = {
