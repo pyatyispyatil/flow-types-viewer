@@ -76,10 +76,10 @@ class TreeNode extends Component {
 
   render() {
     const {collapsed} = this.state;
-    const {node} = this.props;
+    const {node, className} = this.props;
 
     return (
-      <div className={styles.treeView}>
+      <div className={styles.treeView + (className ? ' ' + className : '')}>
         {
           node.name && !node.declarationId ? (
             <Fragment>

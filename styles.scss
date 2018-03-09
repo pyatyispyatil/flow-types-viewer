@@ -17,6 +17,14 @@ div {
 
 .typeIntersectionItem {
   padding: 10px;
+  display: flex;
+
+  &:not(:first-child) {
+    padding-left: 0;
+    &:before {
+      content: ' & '
+    }
+  }
 }
 
 .typeObjectProp {
