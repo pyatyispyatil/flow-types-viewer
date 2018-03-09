@@ -147,15 +147,23 @@ const resolveImportPath = (path, parentPath) => {
   const clearedParentPath = parentPath && parentPath.replace(/\/[a-zA-Z0-9\-_]*?\.js\.flow/, '/');
 
   console.log(path, 'in', parentPath);
+  let resolvedPath = null;
+
   if (isNodeModule) {
-    return null;
+    resolvedPath = null;
   } else if (isExternal || !parentPath) {
-    return './node_modules/' + clearedPath + '.js.flow';
+    resolvedPath = './node_modules/' + clearedPath;
   } else {
-    return parentPath ? (
-      clearedParentPath + clearedPath + '.js.flow'
+    resolvedPath = parentPath ? (
+      clearedParentPath + clearedPath
     ) : path;
   }
+
+  if (resolvedPath && !fs.existsSync(resolvedPath)) {
+    resolvedPath += fs.existsSync(resolvedPath + '.js') ? '.js' : '.js.flow';
+  }
+
+  return resolvedPath;
 };
 
 

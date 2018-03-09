@@ -1,14 +1,13 @@
 const fs = require('fs');
-const rm = require('rimraf');
 
 const parser = require('./parser');
 const {getDeclarations} = require('./utils');
 
-const [, , index] = process.argv;
+const [, , ...paths] = process.argv;
 
-if (index) {
-  const ast = parser.makeAST(index);
-  const declarations = getDeclarations([index], ast);
+if (paths.length) {
+  const ast = paths.reduce((acc, path) => Object.assign(acc, parser.makeAST(path)), {});
+  const declarations = getDeclarations(paths, ast);
   const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, JSON.stringify(declarations));
 
   fs.writeFileSync('./build/index.html', html);

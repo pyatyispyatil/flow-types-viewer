@@ -23,7 +23,6 @@
     "babel-preset-react": "^6.24.1",
     "node-sass": "^4.7.2",
     "parcel-bundler": "^1.6.2",
-    "postcss-modules": "^1.1.0",
-    "rimraf": "^2.6.2"
+    "postcss-modules": "^1.1.0"
   }
 }

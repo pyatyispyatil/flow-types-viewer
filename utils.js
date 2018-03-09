@@ -27,8 +27,28 @@ const declarationByType = (...types) => (node) => (
 );
 const specifierByLocalName = (...names) => (specifier) => names.includes(specifier.local && specifier.local.name);
 
+const isPrimitiveType = ({type}) => (
+  [
+    'null',
+    'function',
+    'stringLiteral',
+    'primitive'
+  ].includes(type)
+);
+const isNotPrimitiveType = (type) => !isPrimitiveType(type);
+
 const getTypeDeclaration = memoize((typeName, path, files) => {
   const fileASTNodeArray = files[path];
+
+  if (!fileASTNodeArray) {
+    return {
+      path: '',
+      key: null,
+      name: typeName,
+      declaration: null
+    }
+  }
+
   const localType = fileASTNodeArray.find(declarationByTypeName(typeName));
 
   if (!localType) {
@@ -72,18 +92,40 @@ const getDeepDeclarations = (type, path, files, acc = {}) => {
     acc[typeDeclaration.key] = detailedType;
 
     if (Array.isArray(detailedType.value)) {
-      return detailedType.value
-        .map((item) => item.type === 'prop' ? item.value : item)
-        .reduce((flatArray, item) => flatArray.concat(Array.isArray(item.value) ? item.value : item), [])
-        .filter(({type}) => type !== 'primitive' && type !== 'stringLiteral')
-        .reduce((acc, item) =>
-            getDeepDeclarations(item.name, item.path, files, acc),
-          acc);
+      return expandArraysAndObjects([detailedType])
+        .filter(isNotPrimitiveType)
+        .reduce((acc, item) => {
+          console.log(item.name, item.path);
+          return getDeepDeclarations(item.name, item.path, files, acc)
+        }, acc);
     }
+
+    return acc;
   }
 
   return acc;
 };
+
+const expandArraysAndObjects = (detailedTypes, acc = []) => detailedTypes
+  .reduce((flatArray, item) => {
+    if (item.type === 'object') {
+      return flatArray.concat(
+        item,
+        expandArraysAndObjects(
+          item.value,
+          acc
+        ));
+    } else {
+      return flatArray.concat(
+        item.type === 'union' || item.type === 'generic' ? item : [],
+        Array.isArray(item.value) ? (
+          expandArraysAndObjects(item.value, acc)
+        ) : (
+          item
+        )
+      )
+    }
+  }, acc);
 
 const getTypesNames = (path, files) => (
   files[path]
@@ -95,22 +137,28 @@ const getTypesNames = (path, files) => (
 const getDetailedType = memoize((typeDeclaration, files) => {
   const {declaration, name, path} = typeDeclaration;
 
-  return Object.assign(
+  return declaration ? Object.assign(
     typeToObject(declaration, path, files),
     {name, path}
-  );
+  ) : {name};
 });
 
 const getTypeDeclarationMeta = (typeName, path, files) => {
-  const typeDeclaration = getTypeDeclaration(typeName, path, files);
+  if (path) {
+    const typeDeclaration = getTypeDeclaration(typeName, path, files);
 
-  if (typeDeclaration) {
-    return {
-      declarationId: typeDeclaration.key,
-      path: typeDeclaration.path
-    };
+    if (typeDeclaration) {
+      return {
+        declarationId: typeDeclaration.key,
+        path: typeDeclaration.path
+      };
+    } else {
+      return {};
+    }
   } else {
-    return {};
+    return {
+      builtin: true
+    }
   }
 };
 
@@ -139,6 +187,11 @@ const typeToObject = (type, path, files) => {
         type: 'stringLiteral',
         value: type.value
       };
+    case 'NullLiteralTypeAnnotation':
+      return {
+        type: 'null',
+        value: 'null'
+      };
     case 'GenericTypeAnnotation':
       return Object.assign({
         type: type.typeParameters ? 'generic' : 'type',
@@ -165,6 +218,8 @@ const typeToObject = (type, path, files) => {
       };
     case 'ExistsTypeAnnotation':
       return {type: 'exists', value: '*'};
+    case 'FunctionTypeAnnotation':
+      return {type: 'function', value: 'function'};//ToDo: function handling
     default:
       return {type: 'NaT', value: 'NaT'};
   }
@@ -178,7 +233,7 @@ const getDeclarations = (paths, files) => {
 
   return {
     types: participatingTypes.map(({type, path}) => getDetailedType(getTypeDeclaration(type, path, files), files)),
-    declarations: participatingTypes.reduce((acc, {type, path}) => getDeepDeclarations(type, path, files), {})
+    declarations: participatingTypes.reduce((acc, {type, path}) => getDeepDeclarations(type, path, files, acc), {})
   }
 };
 

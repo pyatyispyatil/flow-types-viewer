@@ -32,7 +32,9 @@ class TreeNode extends Component {
         return (
           <div>
             {
-              node.value.map((val) => <TreeNode node={val}/>)
+              node.value.map((val) => (
+                <div className={styles.typeUnionItem}>| <TreeNode node={val}/></div>
+              ))
             }
           </div>
         );
@@ -65,8 +67,8 @@ class TreeNode extends Component {
         );
       case 'primitive':
         return node.value;
-      case 'literal':
-        return '|' + node.value;
+      case 'stringLiteral':
+        return `"${node.value}"`;
       default:
         return node.value || 'unhandled';
     }
@@ -98,7 +100,11 @@ class TreeNode extends Component {
 ReactDOM.render((
   <div>
     {
-      DATA.types.map((type) => <TreeNode node={type}/>)
+      DATA.types.map((type) => (
+        <div className={styles.rootType}>
+          <TreeNode node={type}/>
+        </div>
+      ))
     }
   </div>
 ), document.getElementById('root'));
