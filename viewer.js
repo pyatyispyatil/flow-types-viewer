@@ -123,6 +123,9 @@ class TreeNode extends Component {
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
                 {node.name}
+                {node.parameters ? (
+                  `<${node.parameters.map(({name}) => name).join(', ')}>`
+                ) : null}
               </div>
               <div>
                 {!collapsed && node.value ? this.renderNode() : null}
