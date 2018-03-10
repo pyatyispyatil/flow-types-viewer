@@ -2,10 +2,6 @@ body {
   font-family: monospace;
 }
 
-div {
-  padding-left: 2px;
-}
-
 .treeView {
   display: block;
   cursor: pointer;
@@ -15,24 +11,58 @@ div {
   font-weight: bold;
 }
 
+.nodeChildrenWrapper {
+  display: flex;
+
+  &.expanded {
+    padding-top: 2px;
+    &:before {
+      content: '└';
+      font-size: 20px;
+      font-weight: bold;
+      padding-top: 2px;
+      padding-right: 4px;
+    }
+  }
+}
+
+.nodeChildren {
+  padding-top: 5px;
+}
+
 .typeIntersection {
   display: flex;
 }
 
 .typeIntersectionItem {
-  padding: 10px;
+  padding-left: 4px;
+  padding-right: 4px;
   display: flex;
 
   &:not(:first-child) {
-    padding-left: 0;
     &:before {
-      content: ' & '
+      content: '&';
+      padding-right: 8px;
     }
   }
 }
 
 .typeDeclaration {
   font-weight: bold;
+}
+
+.typeObject {
+}
+
+.typeObjectKey {
+}
+
+.typeObjectValue {
+  padding-left: 4px;
+}
+
+.typeObjectChildren {
+  padding-left: 12px;
 }
 
 .typeObjectProp {
@@ -45,6 +75,14 @@ div {
 
 .typeParametrizedGeneric {
   display: flex;
+}
+
+.typeParametrizedGenericName {
+  &:after {
+    content: '<-';
+    padding-right: 4px;
+    padding-left: 4px;
+  }
 }
 
 .typeObjectIndex {

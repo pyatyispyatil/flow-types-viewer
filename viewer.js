@@ -9,6 +9,16 @@ const ce = '}';
 
 const getDeclaration = (node) => DATA.declarations[node.declarationId];
 
+const cn = (...objs) => objs
+  .filter(Boolean)
+  .map((obj) => typeof obj !== 'string' ? (
+    Object.entries(obj)
+      .map(([key, value]) => value ? key : '')
+      .filter(Boolean)
+      .join(' ')
+  ) : obj)
+  .join(' ');
+
 class TreeNode extends Component {
   state = {
     collapsed: true
@@ -46,7 +56,9 @@ class TreeNode extends Component {
         if (declaration && node.value) {
           return (
             <div className={styles.typeParametrizedGeneric}>
-              {node.name + ' <- '}
+              <div className={styles.typeParametrizedGenericName}>
+              {node.name}
+              </div>
               <TreeNode {...this.getAssets(declaration)} args={node.value}/>
             </div>
           )
@@ -75,17 +87,18 @@ class TreeNode extends Component {
         return (
           <div className={styles.typeIntersection}>
             {
-              node.value.map((val) => (
-                <TreeNode className={styles.typeIntersectionItem} {...this.getAssets(val)}/>
-              ))
+              node.value
+                .map((val) => (
+                  <TreeNode className={styles.typeIntersectionItem} {...this.getAssets(val)}/>
+                ))
             }
           </div>
         );
       case 'object':
         return (
-          <div>
+          <div className={styles.typeObject}>
             {cs}
-            <div style={{paddingLeft: '14px'}}>
+            <div className={styles.typeObjectChildren}>
               {
                 node.indexers.map((index) => (
                   <div className={styles.typeObjectProp}>
@@ -97,8 +110,8 @@ class TreeNode extends Component {
               {
                 node.value.map((val) => (
                   <div className={styles.typeObjectProp}>
-                    <div>{val.key}</div>
-                    : <TreeNode {...this.getAssets(val)}/>
+                    <div className={styles.typeObjectKey}>{val.key}</div>
+                    : <TreeNode className={styles.typeObjectValue} {...this.getAssets(val)}/>
                   </div>
                 ))
               }
@@ -120,9 +133,9 @@ class TreeNode extends Component {
     const {node, className} = this.props;
 
     return (
-      <div className={styles.treeView + (className ? ' ' + className : '')}>
+      <div className={cn(styles.treeView, className)}>
         {
-          node.name && !node.declarationId && (!node.builtin || node.genericName !==  node.name) ? (
+          node.name && !node.declarationId && (!node.builtin || node.genericName !== node.name) ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
                 {node.name}
@@ -130,8 +143,12 @@ class TreeNode extends Component {
                   `<${node.parameters.map(({name}) => name).join(', ')}>`
                 ) : null}
               </div>
-              <div>
-                {!collapsed && node.value ? this.renderNode() : null}
+              <div className={cn(styles.nodeChildrenWrapper, {[styles.expanded]: !collapsed})}>
+                {!collapsed && node.value ? (
+                  <div className={styles.nodeChildren}>
+                    {this.renderNode()}
+                  </div>
+                ) : null}
               </div>
             </Fragment>
           ) : (this.renderNode())
