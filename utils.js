@@ -146,7 +146,8 @@ const getDetailedType = memoize((typeDeclaration, files) => {
         .map(({name}) => ({
           type: 'typeParameter',
           name
-        }))}
+        }))
+    }
   ) : {name};
 });
 
@@ -200,11 +201,14 @@ const typeToObject = (type, path, files) => {
         value: 'null'
       };
     case 'GenericTypeAnnotation':
-      return Object.assign({
-        type: type.typeParameters ? 'generic' : 'type',
-        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
-        name: type.id && type.id.name
-      }, getTypeDeclarationMeta(type.id && type.id.name, path, files));
+      return Object.assign(
+        {
+          type: type.typeParameters ? 'generic' : 'type',
+          value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
+          name: type.id && type.id.name
+        },
+        getTypeDeclarationMeta(type.id && type.id.name, path, files)
+      );
     case 'IntersectionTypeAnnotation':
       return {
         type: 'intersection',
@@ -218,6 +222,10 @@ const typeToObject = (type, path, files) => {
     case 'ObjectTypeAnnotation':
       return {
         type: 'object',
+        indexers: type.indexers.map((index) => ({
+          key: typeToObject(index.key, path, files),
+          value: typeToObject(index.value, path, files)
+        })),
         value: type.properties.map((prop) => Object.assign(typeToObject(prop.value, path, files), {
           optional: prop.optional,
           key: prop.key.name

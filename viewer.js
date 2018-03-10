@@ -82,6 +82,14 @@ class TreeNode extends Component {
             {cs}
             <div style={{paddingLeft: '14px'}}>
               {
+                node.indexers.map((index) => (
+                  <div className={styles.typeObjectProp}>
+                    <div className={styles.typeObjectIndex}>[<TreeNode {...this.getAssets(index.key)}/>]</div>
+                    : <TreeNode {...this.getAssets(index.value)}/>
+                  </div>
+                ))
+              }
+              {
                 node.value.map((val) => (
                   <div className={styles.typeObjectProp}>
                     <div>{val.key}</div>
