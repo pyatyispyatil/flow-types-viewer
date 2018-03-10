@@ -71,7 +71,7 @@ const getTypeDeclaration = memoize((typeName, path, files) => {
     }
   } else {
     const declaration = localType.type === 'TypeAlias' ? localType : localType.declaration;
-    const id = declaration.right.type.id;
+    const id = declaration && declaration.right.type.id;
     const name = (id && id.name) || typeName;
     const key = `${name || typeName}:${path}`;
 
@@ -160,14 +160,12 @@ const getTypeDeclarationMeta = (typeName, path, files) => {
         declarationId: typeDeclaration.key,
         path: typeDeclaration.path
       };
-    } else {
-      return {};
-    }
-  } else {
-    return {
-      builtin: true
     }
   }
+
+  return {
+    builtin: true
+  };
 };
 
 
@@ -205,7 +203,8 @@ const typeToObject = (type, path, files) => {
         {
           type: type.typeParameters ? 'generic' : 'type',
           value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
-          name: type.id && type.id.name
+          name: type.id && type.id.name,
+          genericName: type.id && type.id.name
         },
         getTypeDeclarationMeta(type.id && type.id.name, path, files)
       );

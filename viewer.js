@@ -50,9 +50,11 @@ class TreeNode extends Component {
         } else {
           return (
             <div className={styles.typeGeneric}>
+              {node.genericName + '<'}
               {
                 node.value.map((val) => <TreeNode {...this.getAssets(val)}/>)
               }
+              {'>'}
             </div>
           );
         }
