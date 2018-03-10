@@ -138,11 +138,21 @@ class TreeNode extends Component {
 ReactDOM.render((
   <div>
     {
-      DATA.types.map((type) => (
-        <div className={styles.rootType}>
-          <TreeNode node={type}/>
-        </div>
-      ))
+      Object.entries(DATA.types)
+        .map(([path, types]) => (
+          <div>
+            <div className={styles.path}>
+            {path}
+            </div>
+            {
+              types.map((type) => (
+                <div className={styles.rootType}>
+                  <TreeNode node={type}/>
+                </div>
+              ))
+            }
+          </div>
+        ))
     }
   </div>
 ), document.getElementById('root'));

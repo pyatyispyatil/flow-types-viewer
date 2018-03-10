@@ -2,13 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 const parser = require('./parser');
-const {getDeclarations} = require('./utils');
+const {getDeclarations} = require('./analyzer');
 
 const [, , ...args] = process.argv;
 
 
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
-  const newPath = path.resolve(parentPath || '', item);
+  const newPath = path.resolve(parentPath || __dirname, item);
 
   try {
     if (fs.lstatSync(newPath).isDirectory()) {

@@ -2,6 +2,8 @@ const exec = require('child_process').execSync;
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const {memoize} = require('./utils');
+
 
 
 const typeToString = (type) => {
@@ -135,15 +137,18 @@ const resolveImports = (astNodes, path) => (
   ) : node)
 );
 
-const resolveImportPath = (importPath, parentPath) => {
-  const isNodeModule = /^[a-zA-Z0-9\-_]+$/.test(importPath);
-  const clearedPath = importPath && importPath.replace(/^\.[\/]/, '');
-  const clearedParentPath = parentPath && parentPath.replace(/[a-zA-Z0-9\-_.]*?\.js\.flow/, '');
 
-  console.log(importPath, 'in', parentPath);
+const filesEndings = ['.js', '.js.flow'];
+const resolveImportPath = memoize((importPath, parentPath) => {
+  const isNodeModule = /^[a-zA-Z0-9_].*?$/.test(importPath);
+  const clearedPath = importPath && importPath.replace(/^\.[\/]/, '');
+  const clearedParentPath = parentPath && parentPath.replace(/[a-zA-Z0-9\-_.]*?\.js(\.flow)?$/, '');
+
   let resolvedPath = null;
 
-  if (isNodeModule) {
+  if (importPath && path.isAbsolute(importPath)) {
+    resolvedPath = importPath;
+  } else if (isNodeModule) {
     resolvedPath = null;
   } else if (!parentPath) {
     resolvedPath = './node_modules/' + clearedPath;
@@ -154,12 +159,11 @@ const resolveImportPath = (importPath, parentPath) => {
   }
 
   if (resolvedPath && !fs.existsSync(resolvedPath)) {
-    resolvedPath += fs.existsSync(resolvedPath + '.js') ? '.js' : '.js.flow';
+    resolvedPath += filesEndings.find((ending) => fs.existsSync(resolvedPath + ending)) || '';
   }
 
   return resolvedPath;
-};
-
+});
 
 const makeAST = (...paths) => {
   const imports = paths.reduce((acc, path) => {
