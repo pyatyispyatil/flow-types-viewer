@@ -122,7 +122,7 @@ class TreeNode extends Component {
     return (
       <div className={styles.treeView + (className ? ' ' + className : '')}>
         {
-          node.name && !node.declarationId && !node.builtin ? (
+          node.name && !node.declarationId && (!node.builtin || node.genericName !==  node.name) ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
                 {node.name}
@@ -141,24 +141,43 @@ class TreeNode extends Component {
   }
 }
 
-ReactDOM.render((
-  <div>
-    {
-      Object.entries(DATA.types)
-        .map(([path, types]) => (
-          <div>
-            <div className={styles.path}>
-            {path}
-            </div>
-            {
-              types.map((type) => (
-                <div className={styles.rootType}>
-                  <TreeNode node={type}/>
+class Root extends Component {
+  state = {
+    searchWord: ''
+  };
+
+  render() {
+    const {searchWord} = this.state;
+
+    return (
+      <div>
+        <div className={styles.search}>
+          Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
+        </div>
+        {
+          Object.entries(DATA.types)
+            .map(([path, types]) => {
+              const filteredTypes = searchWord ? types.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0) : types;
+
+              return filteredTypes.length ? (
+                <div>
+                  <div className={styles.path}>
+                    {path}
+                  </div>
+                  {
+                    filteredTypes.map((type) => (
+                      <div className={styles.rootType}>
+                        <TreeNode node={type}/>
+                      </div>
+                    ))
+                  }
                 </div>
-              ))
-            }
-          </div>
-        ))
-    }
-  </div>
-), document.getElementById('root'));
+              ) : (null)
+            })
+        }
+      </div>
+    )
+  }
+}
+
+ReactDOM.render(<Root/>, document.getElementById('root'));
