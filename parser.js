@@ -1,6 +1,7 @@
 const exec = require('child_process').execSync;
 const crypto = require('crypto');
 const fs = require('fs');
+const path = require('path');
 
 
 const typeToString = (type) => {
@@ -124,12 +125,6 @@ const getDeepImports = (ast, relativePath, acc = {}) => {
   }, acc);
 };
 
-const clearImports = (code) => (
-  code && code
-    .replace(/(^import type.*?'.*?\/+.*?'.*?$)|(^\/\/.*?@flow$)/mig, '')
-    .replace(/^export (default)?/igm, '')
-);
-
 const resolveImports = (astNodes, path) => (
   astNodes.map((node) => node.type === 'ImportDeclaration' ? (
     Object.assign(node, {
@@ -140,23 +135,22 @@ const resolveImports = (astNodes, path) => (
   ) : node)
 );
 
-const resolveImportPath = (path, parentPath) => {
-  const isExternal = /^rc-web-types.*?/.test(path);
-  const isNodeModule = /^[a-zA-Z0-9\-_]+$/.test(path);
-  const clearedPath = path.replace(/^\.\//, '');
-  const clearedParentPath = parentPath && parentPath.replace(/\/[a-zA-Z0-9\-_]*?\.js\.flow/, '/');
+const resolveImportPath = (importPath, parentPath) => {
+  const isNodeModule = /^[a-zA-Z0-9\-_]+$/.test(importPath);
+  const clearedPath = importPath && importPath.replace(/^\.[\/]/, '');
+  const clearedParentPath = parentPath && parentPath.replace(/[a-zA-Z0-9\-_.]*?\.js\.flow/, '');
 
-  console.log(path, 'in', parentPath);
+  console.log(importPath, 'in', parentPath);
   let resolvedPath = null;
 
   if (isNodeModule) {
     resolvedPath = null;
-  } else if (isExternal || !parentPath) {
+  } else if (!parentPath) {
     resolvedPath = './node_modules/' + clearedPath;
   } else {
     resolvedPath = parentPath ? (
-      clearedParentPath + clearedPath
-    ) : path;
+      path.resolve(clearedParentPath, clearedPath)
+    ) : importPath;
   }
 
   if (resolvedPath && !fs.existsSync(resolvedPath)) {
