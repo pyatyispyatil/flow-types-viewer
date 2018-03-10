@@ -79,7 +79,7 @@ const getTypeDeclaration = memoize((typeName, path, files) => {
       path,
       key,
       name,
-      declaration: declaration.right
+      declaration: declaration
     };
   }
 });
@@ -138,8 +138,15 @@ const getDetailedType = memoize((typeDeclaration, files) => {
   const {declaration, name, path} = typeDeclaration;
 
   return declaration ? Object.assign(
-    typeToObject(declaration, path, files),
-    {name, path}
+    typeToObject(declaration.right, path, files),
+    {
+      name,
+      path,
+      parameters: declaration.typeParameters && declaration.typeParameters.params
+        .map(({name}) => ({
+          type: 'typeParameter',
+          name
+        }))}
   ) : {name};
 });
 

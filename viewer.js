@@ -7,6 +7,8 @@ import styles from './styles.scss';
 const cs = '{';
 const ce = '}';
 
+const getDeclaration = (node) => DATA.declarations[node.declarationId];
+
 class TreeNode extends Component {
   state = {
     collapsed: true
@@ -14,26 +16,52 @@ class TreeNode extends Component {
 
   handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
+  getAssets(assetedNode) {
+    const {parameters, args, node} = this.props;
+
+    const constructedParameters = args ? args
+      .reduce((acc, arg, index) => Object.assign(
+        acc, {
+          [node.parameters[index].name]: arg
+        }), {}) : parameters;
+
+    return {
+      node: (constructedParameters && constructedParameters[assetedNode.name]) || assetedNode,
+      parameters: constructedParameters
+    }
+  }
+
   renderNode() {
     const {node} = this.props;
+    const declaration = getDeclaration(node);
+
 
     switch (node.type) {
       case 'type':
-        return <TreeNode node={DATA.declarations[node.declarationId]}/>;
+        return <TreeNode {...this.getAssets(declaration)}/>;
       case 'generic':
-        return (
-          <div>
-            {
-              node.value.map((val) => <TreeNode node={val}/>)
-            }
-          </div>
-        );
+        if (declaration && node.value) {
+          return (
+            <div className={styles.typeParametrizedGeneric}>
+              {node.name + ' <- '}
+              <TreeNode {...this.getAssets(declaration)} args={node.value}/>
+            </div>
+          )
+        } else {
+          return (
+            <div className={styles.typeGeneric}>
+              {
+                node.value.map((val) => <TreeNode {...this.getAssets(val)}/>)
+              }
+            </div>
+          );
+        }
       case 'union':
         return (
           <div>
             {
               node.value.map((val) => (
-                <div className={styles.typeUnionItem}>| <TreeNode node={val}/></div>
+                <div className={styles.typeUnionItem}>| <TreeNode {...this.getAssets(val)}/></div>
               ))
             }
           </div>
@@ -42,8 +70,8 @@ class TreeNode extends Component {
         return (
           <div className={styles.typeIntersection}>
             {
-              node.value.map((item) => (
-                <TreeNode node={item} className={styles.typeIntersectionItem}/>
+              node.value.map((val) => (
+                <TreeNode className={styles.typeIntersectionItem} {...this.getAssets(val)}/>
               ))
             }
           </div>
@@ -54,10 +82,10 @@ class TreeNode extends Component {
             {cs}
             <div style={{paddingLeft: '14px'}}>
               {
-                node.value.map((value) => (
+                node.value.map((val) => (
                   <div className={styles.typeObjectProp}>
-                    <div>{value.key}</div>
-                    : <TreeNode node={value}/>
+                    <div>{val.key}</div>
+                    : <TreeNode {...this.getAssets(val)}/>
                   </div>
                 ))
               }
@@ -87,7 +115,7 @@ class TreeNode extends Component {
                 {node.name}
               </div>
               <div>
-                {collapsed ? null : this.renderNode()}
+                {!collapsed && node.value ? this.renderNode() : null}
               </div>
             </Fragment>
           ) : (this.renderNode())
