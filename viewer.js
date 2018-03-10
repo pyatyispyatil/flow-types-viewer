@@ -35,10 +35,13 @@ class TreeNode extends Component {
     const {node} = this.props;
     const declaration = getDeclaration(node);
 
-
     switch (node.type) {
       case 'type':
-        return <TreeNode {...this.getAssets(declaration)}/>;
+        if (declaration) {
+          return <TreeNode {...this.getAssets(declaration)}/>;
+        } else {
+          return <div className={styles.typeDeclaration}>{node.name}</div>
+        }
       case 'generic':
         if (declaration && node.value) {
           return (
@@ -119,7 +122,7 @@ class TreeNode extends Component {
     return (
       <div className={styles.treeView + (className ? ' ' + className : '')}>
         {
-          node.name && !node.declarationId ? (
+          node.name && !node.declarationId && !node.builtin ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
                 {node.name}

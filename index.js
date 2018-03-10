@@ -10,13 +10,13 @@ const [, , ...args] = process.argv;
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
   const newPath = path.resolve(parentPath || __dirname, item);
 
-  try {
-    if (fs.lstatSync(newPath).isDirectory()) {
+  if (fs.lstatSync(newPath).isDirectory()) {
+    try {
       getFlatFiles(fs.readdirSync(newPath), newPath, flattedDir);
-    } else {
-      flattedDir.push(newPath);
+    } catch (err) {
     }
-  } catch (err) {
+  } else {
+    flattedDir.push(newPath);
   }
 
   return flattedDir;
