@@ -6,6 +6,14 @@ const {getDeclarations} = require('./analyzer');
 
 const [, , ...args] = process.argv;
 
+const COMMANDS = {
+  '--json': 'json',
+  '-j': 'json',
+  '--text': 'text',
+  '-t': 'text'
+};
+
+const COMMANDS_KEYS = Object.keys(COMMANDS);
 
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
   const newPath = path.resolve(parentPath || __dirname, item);
@@ -25,17 +33,27 @@ const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, 
 const getFlowFiles = (paths) => getFlatFiles(paths).filter((path) => /^.*?\.js(\.flow)?$/.test(path));
 
 if (args.length) {
-  console.log('Parsing started');
+  const commands = args.filter((arg) => COMMANDS_KEYS.includes(arg)).map((arg) => COMMANDS[arg]).filter(Boolean);
+  const argsPaths = args.filter((arg) => !COMMANDS_KEYS.includes(arg));
 
   try {
-    const paths = getFlowFiles(args);
+    console.log('Parsing started');
+    const paths = getFlowFiles(argsPaths);
     const files = paths.reduce((acc, path) => Object.assign(acc, parser.makeAST(path)), {});
-    const declarations = getDeclarations(paths, files);
-    const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, JSON.stringify(declarations));
+    const data = getDeclarations(paths, files);
     console.log('Parsing complete');
 
-    fs.writeFileSync('./build/index.html', html);
-    console.log('index.html was created');
+    const dataJson = JSON.stringify(data);
+
+    if (commands.includes('json')) {
+      fs.writeFileSync('output.json', dataJson);
+    } else if (commands.includes('text')) {
+      console.log(dataJson)
+    } else {
+      const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, dataJson);
+      fs.writeFileSync('./build/index.html', html);
+      console.log('index.html was created');
+    }
   } catch (error) {
     console.log('Parsing failed');
     console.error(error);

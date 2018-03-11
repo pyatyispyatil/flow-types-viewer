@@ -1,5 +1,3 @@
-export const getDeclaration = (node) => DATA.declarations[node.declarationId];
-
 export const cn = (...objs) => objs
   .filter(Boolean)
   .map((obj) => typeof obj !== 'string' ? (

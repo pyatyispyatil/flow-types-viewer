@@ -1,6 +1,5 @@
 import React, {Component} from 'react';
 import styles from './styles.scss';
-import {getDeclaration} from './utils';
 
 //https://youtrack.jetbrains.com/issue/WEB-21774
 const cs = '{';
@@ -8,7 +7,7 @@ const ce = '}';
 
 export class Node extends Component {
   getAssets(node) {
-    const {parameters, args, node: currentNode, parent} = this.props;
+    const {parameters, args, node: currentNode, parent, declarations} = this.props;
 
     const constructedParameters = args ? args
       .reduce((acc, arg, index) => Object.assign(
@@ -19,13 +18,14 @@ export class Node extends Component {
     return {
       node: (constructedParameters && constructedParameters[node.name]) || node,
       parent: args ? node : parent,
-      parameters: constructedParameters
+      parameters: constructedParameters,
+      declarations
     }
   }
 
   render() {
-    const {node, render} = this.props;
-    const declaration = getDeclaration(node);
+    const {node, render, declarations} = this.props;
+    const declaration = declarations[node.declarationId];
 
     switch (node.type) {
       case 'type':

@@ -1,12 +1,11 @@
 import React, {Component} from 'react';
-import {getDeclaration} from './utils';
 import {WrapNode} from './wrap-node';
 import {Node} from './node';
 
 export class StaticTree extends Component {
   flatItems = (items) => items.reduce((acc, item) => {
     if (item.type === 'type') {
-      const declaration = getDeclaration(item);
+      const declaration = this.props.declarations[item.declarationId];
 
       if (declaration) {
         return acc.concat(...(
