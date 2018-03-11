@@ -12,13 +12,14 @@ export class WrapNode extends Component {
   handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
   render() {
-    const {node, children, className} = this.props;
+    const {node, children, className, force} = this.props;
     const {collapsed} = this.state;
+    const canWrap = force || (node.name && !node.declarationId && (!node.builtin || node.genericName !== node.name));
 
     return (
       <div className={cn(styles.treeView, className)}>
         {
-          node.name && !node.declarationId && (!node.builtin || node.genericName !== node.name) ? (
+          canWrap ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
                 {node.name}

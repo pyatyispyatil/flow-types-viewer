@@ -65,7 +65,7 @@ export class StaticTree extends Component {
 
     if (isRoot) {
       return (
-        <WrapNode className={className} node={node}>
+        <WrapNode className={className} node={node} force>
           {this.renderNode()}
         </WrapNode>
       );

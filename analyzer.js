@@ -209,7 +209,7 @@ const typeToObject = (type, path, files) => {
         })),
         value: type.properties.map((prop) => Object.assign(typeToObject(prop.value, path, files), {
           optional: prop.optional,
-          key: prop.key.name
+          key: prop.key.name || `"${prop.key.value}"`
         }))
       };
     case 'ExistsTypeAnnotation':

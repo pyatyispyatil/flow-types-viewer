@@ -38,9 +38,13 @@ export class Node extends Component {
         if (declaration && node.value) {
           return (
             <div className={styles.typeParametrizedGeneric}>
-              <div className={styles.typeParametrizedGenericName}>
-                {node.name}
-              </div>
+              {
+                node.name ? (
+                  <div className={styles.typeParametrizedGenericName}>
+                    {node.name}
+                  </div>
+                ) : null
+              }
               {render(Object.assign(this.getAssets(declaration), {args: node.value}))}
             </div>
           )
@@ -102,7 +106,7 @@ export class Node extends Component {
                     <div className={styles.typeObjectKey}>
                       {val.key}
                     </div>
-                    :
+                    {val.optional && '?'}:
                     <div className={styles.typeObjectValue}>
                       {render(this.getAssets(val))}
                     </div>
