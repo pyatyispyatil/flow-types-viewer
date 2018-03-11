@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "build": "npm run start && parcel build viewer.js -d ./build",
-    "watch": "parcel watch viewer.js -d ./build"
+    "build": "parcel build viewer/index.js -d ./build -o viewer.js && npm run start",
+    "watch": "parcel watch viewer/index.js -d ./build -o viewer.js"
   },
   "author": "Nikolay Ryabov",
   "license": "ISC",

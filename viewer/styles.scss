@@ -2,6 +2,12 @@ body {
   font-family: monospace;
 }
 
+.hover {
+  &:hover {
+    background: #b4b4b4;
+  }
+}
+
 .toolbar {
   display: flex;
 }
