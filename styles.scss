@@ -2,6 +2,15 @@ body {
   font-family: monospace;
 }
 
+.toolbar {
+  display: flex;
+}
+
+.checkbox {
+  cursor: pointer;
+  margin-left: 20px;
+}
+
 .treeView {
   display: block;
   cursor: pointer;
@@ -69,6 +78,14 @@ body {
   display: flex;
 }
 
+.typeObjectIndexKey {
+  display: flex;
+}
+
+.typeObjectIndexValue {
+  padding-left: 4px;
+}
+
 .typeUnionItem {
   display: flex;
 }
@@ -83,10 +100,6 @@ body {
     padding-right: 4px;
     padding-left: 4px;
   }
-}
-
-.typeObjectIndex {
-  display: flex;
 }
 
 .typeGeneric {

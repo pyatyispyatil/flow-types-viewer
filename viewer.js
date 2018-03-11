@@ -19,15 +19,10 @@ const cn = (...objs) => objs
   ) : obj)
   .join(' ');
 
-class TreeNode extends Component {
-  state = {
-    collapsed: true
-  };
 
-  handleClick = () => this.setState({collapsed: !this.state.collapsed});
-
+class Node extends Component {
   getAssets(assetedNode) {
-    const {parameters, args, node} = this.props;
+    const {parameters, args, node, parent} = this.props;
 
     const constructedParameters = args ? args
       .reduce((acc, arg, index) => Object.assign(
@@ -37,18 +32,19 @@ class TreeNode extends Component {
 
     return {
       node: (constructedParameters && constructedParameters[assetedNode.name]) || assetedNode,
+      parent: args ? assetedNode : parent,
       parameters: constructedParameters
     }
   }
 
-  renderNode() {
-    const {node} = this.props;
+  render() {
+    const {node, render} = this.props;
     const declaration = getDeclaration(node);
 
     switch (node.type) {
       case 'type':
         if (declaration) {
-          return <TreeNode {...this.getAssets(declaration)}/>;
+          return render(this.getAssets(declaration));
         } else {
           return <div className={styles.typeDeclaration}>{node.name}</div>
         }
@@ -57,9 +53,9 @@ class TreeNode extends Component {
           return (
             <div className={styles.typeParametrizedGeneric}>
               <div className={styles.typeParametrizedGenericName}>
-              {node.name}
+                {node.name}
               </div>
-              <TreeNode {...this.getAssets(declaration)} args={node.value}/>
+              {render(Object.assign(this.getAssets(declaration), {args: node.value}))}
             </div>
           )
         } else {
@@ -67,7 +63,7 @@ class TreeNode extends Component {
             <div className={styles.typeGeneric}>
               {node.genericName + '<'}
               {
-                node.value.map((val) => <TreeNode {...this.getAssets(val)}/>)
+                node.value.map((val) => render(this.getAssets(val)))
               }
               {'>'}
             </div>
@@ -78,7 +74,7 @@ class TreeNode extends Component {
           <div>
             {
               node.value.map((val) => (
-                <div className={styles.typeUnionItem}>| <TreeNode {...this.getAssets(val)}/></div>
+                <div className={styles.typeUnionItem}>| {render(this.getAssets(val))}</div>
               ))
             }
           </div>
@@ -89,7 +85,7 @@ class TreeNode extends Component {
             {
               node.value
                 .map((val) => (
-                  <TreeNode className={styles.typeIntersectionItem} {...this.getAssets(val)}/>
+                  render(Object.assign(this.getAssets(val), {className: styles.typeIntersectionItem}))
                 ))
             }
           </div>
@@ -102,8 +98,8 @@ class TreeNode extends Component {
               {
                 node.indexers.map((index) => (
                   <div className={styles.typeObjectProp}>
-                    <div className={styles.typeObjectIndex}>[<TreeNode {...this.getAssets(index.key)}/>]</div>
-                    : <TreeNode {...this.getAssets(index.value)}/>
+                    <div className={styles.typeObjectIndexKey}>[{render(this.getAssets(index.key))}]</div>
+                    : {render(Object.assign(this.getAssets(index.value), {className: styles.typeObjectIndexValue}))}
                   </div>
                 ))
               }
@@ -111,7 +107,7 @@ class TreeNode extends Component {
                 node.value.map((val) => (
                   <div className={styles.typeObjectProp}>
                     <div className={styles.typeObjectKey}>{val.key}</div>
-                    : <TreeNode className={styles.typeObjectValue} {...this.getAssets(val)}/>
+                    : {render(Object.assign(this.getAssets(val), {className: styles.typeObjectValue}))}
                   </div>
                 ))
               }
@@ -127,10 +123,18 @@ class TreeNode extends Component {
         return node.value || 'unhandled';
     }
   }
+}
+
+class WrapNode extends Component {
+  state = {
+    collapsed: true
+  };
+
+  handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
   render() {
+    const {node, children, className} = this.props;
     const {collapsed} = this.state;
-    const {node, className} = this.props;
 
     return (
       <div className={cn(styles.treeView, className)}>
@@ -146,30 +150,127 @@ class TreeNode extends Component {
               <div className={cn(styles.nodeChildrenWrapper, {[styles.expanded]: !collapsed})}>
                 {!collapsed && node.value ? (
                   <div className={styles.nodeChildren}>
-                    {this.renderNode()}
+                    {children}
                   </div>
                 ) : null}
               </div>
             </Fragment>
-          ) : (this.renderNode())
+          ) : (children)
         }
       </div>
     )
   }
 }
 
-class Root extends Component {
-  state = {
-    searchWord: ''
+class ExpandableTree extends Component {
+  renderNode = () => {
+    return <Node
+      {...this.props}
+      render={(props) => <ExpandableTree {...props}/>}
+    />;
   };
 
   render() {
-    const {searchWord} = this.state;
+    const {node, className} = this.props;
+
+    return (
+      <WrapNode className={className} node={node}>
+        {this.renderNode()}
+      </WrapNode>
+    )
+  }
+}
+
+class StaticTree extends Component {
+  flatItems = (items) => items.reduce((acc, item) => {
+    if (item.type === 'type') {
+      const declaration = getDeclaration(item);
+
+      if (declaration) {
+        return acc.concat(...(
+          declaration.type === 'intersection' ? this.flatItems(declaration.value) : declaration.value
+        ));
+      }
+    } else if (item.type === 'object' && item.value) {
+      return acc.concat(...item.value.map(this.expandDeclarations));
+    } else {
+      return acc.concat(item);
+    }
+
+    return acc;
+  }, []);
+
+  expandDeclarations = (node) => {
+    return Object.assign({}, node, node.type === 'intersection' ? {
+      value: node && node.value && Array.isArray(node.value) ? this.flatItems(node.value) : null,
+      indexers: [],
+      type: 'object'
+    } : {});
+  };
+
+  renderNode = (props) => {
+    const {node, genericStack = []} = props || this.props;
+
+    if (!node) {
+      return null;
+    }
+
+    if (!genericStack.includes(node.name)) {
+      if (node.type === 'generic') {//ToDo: recursive handling
+        genericStack.push(node.name);
+      }
+
+      return (
+        <Node
+          {...this.props}
+          node={this.expandDeclarations(node)}
+          render={(props) => <StaticTree {...props} genericStack={genericStack}/>}
+        />
+      );
+    } else {
+      return <div>{node.name}</div>;
+    }
+  };
+
+  render() {
+    const {isRoot, node, className} = this.props;
+
+    if (isRoot) {
+      return (
+        <WrapNode className={className} node={node}>
+          {this.renderNode()}
+        </WrapNode>
+      );
+    } else {
+      return this.renderNode();
+    }
+  }
+}
+
+class Root extends Component {
+  state = {
+    searchWord: '',
+    flatMode: false
+  };
+
+  render() {
+    const {searchWord, flatMode} = this.state;
 
     return (
       <div>
-        <div className={styles.search}>
-          Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
+        <div className={styles.toolbar}>
+          <div className={styles.search}>
+            Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
+          </div>
+          <div className={styles.checkbox}>
+            <input
+              className={styles.checkboxInput}
+              id="flatMode"
+              type="checkbox"
+              onChange={(e) => this.setState({flatMode: !this.state.flatMode})}
+            />
+            <label htmlFor="flatMode">Flat mode</label>
+          </div>
         </div>
         {
           Object.entries(DATA.types)
@@ -184,7 +285,13 @@ class Root extends Component {
                   {
                     filteredTypes.map((type) => (
                       <div className={styles.rootType}>
-                        <TreeNode node={type}/>
+                        {
+                          flatMode ? (
+                            <StaticTree node={type} isRoot={true}/>
+                          ) : (
+                            <ExpandableTree node={type} isRoot={true}/>
+                          )
+                        }
                       </div>
                     ))
                   }
