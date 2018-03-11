@@ -84,16 +84,28 @@ export class Node extends Component {
               {
                 node.indexers.map((index) => (
                   <div className={styles.typeObjectProp}>
-                    <div className={styles.typeObjectIndexKey}>[{render(this.getAssets(index.key))}]</div>
-                    : {render(Object.assign(this.getAssets(index.value), {className: styles.typeObjectIndexValue}))}
+                    <div className={styles.typeObjectIndexKey}>
+                      [
+                      {render(this.getAssets(index.key))}
+                      ]
+                    </div>
+                    :
+                    <div className={styles.typeObjectIndexValue}>
+                      {render(this.getAssets(index.value))}
+                    </div>
                   </div>
                 ))
               }
               {
                 node.value.map((val) => (
                   <div className={styles.typeObjectProp}>
-                    <div className={styles.typeObjectKey}>{val.key}</div>
-                    : {render(Object.assign(this.getAssets(val), {className: styles.typeObjectValue}))}
+                    <div className={styles.typeObjectKey}>
+                      {val.key}
+                    </div>
+                    :
+                    <div className={styles.typeObjectValue}>
+                      {render(this.getAssets(val))}
+                    </div>
                   </div>
                 ))
               }
