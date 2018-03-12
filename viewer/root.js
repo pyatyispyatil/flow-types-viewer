@@ -4,6 +4,9 @@ import styles from './styles.scss';
 import {StaticTree} from './static-tree';
 import {ExpandableTree} from './expandable-node';
 
+const arraysLength = (entries, handler = (item) => item) => entries
+  .reduce((acc, [key, array]) => handler(array).length + acc, 0);
+
 export class Root extends Component {
   state = {
     searchWord: '',
@@ -13,9 +16,14 @@ export class Root extends Component {
   render() {
     const {declarations, types} = this.props;
     const {searchWord, flatMode} = this.state;
+    const typesEntries = Object.entries(types);
 
     return (
       <div>
+
+        <div className={styles.toolbar}>
+          Total count: {arraysLength(typesEntries)}
+        </div>
         <div className={styles.toolbar}>
           <div className={styles.search}>
             Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
@@ -31,7 +39,17 @@ export class Root extends Component {
           </div>
         </div>
         {
-          Object.entries(types)
+          searchWord ? (
+            <div className={styles.toolbar}>
+              Found: {
+              arraysLength(typesEntries, (pathTypes) => pathTypes
+                .filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0))
+            }
+            </div>
+          ) : null
+        }
+        {
+          typesEntries
             .map(([path, pathTypes]) => {
               const filteredTypes = searchWord ? pathTypes.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0) : pathTypes;
 
