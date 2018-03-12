@@ -76,10 +76,7 @@ const getDeepDeclarations = (type, path, files, acc = {}) => {
     if (Array.isArray(detailedType.value)) {
       return expandArraysAndObjects([detailedType])
         .filter(isNotPrimitiveType)
-        .reduce((acc, item) => {
-          console.log(item.name, item.path);
-          return getDeepDeclarations(item.name, item.path, files, acc)
-        }, acc);
+        .reduce((acc, item) => getDeepDeclarations(item.name, item.path, files, acc), acc);
     }
 
     return acc;

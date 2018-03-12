@@ -35,20 +35,27 @@ const getFlowFiles = (paths) => getFlatFiles(paths).filter((path) => /^.*?\.js(\
 if (args.length) {
   const commands = args.filter((arg) => COMMANDS_KEYS.includes(arg)).map((arg) => COMMANDS[arg]).filter(Boolean);
   const argsPaths = args.filter((arg) => !COMMANDS_KEYS.includes(arg));
+  const isTextMode = commands.includes('text');
 
   try {
-    console.log('Parsing started');
+    if (!isTextMode) {
+      console.log('Parsing started');
+    }
+
     const paths = getFlowFiles(argsPaths);
     const files = paths.reduce((acc, path) => Object.assign(acc, parser.makeAST(path)), {});
     const data = getDeclarations(paths, files);
-    console.log('Parsing complete');
+
+    if (!isTextMode) {
+      console.log('Parsing complete');
+    }
 
     const dataJson = JSON.stringify(data);
 
-    if (commands.includes('json')) {
-      fs.writeFileSync('output.json', dataJson);
-    } else if (commands.includes('text')) {
+    if (isTextMode) {
       console.log(dataJson)
+    } else if (commands.includes('json')) {
+      fs.writeFileSync('output.json', dataJson);
     } else {
       const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, dataJson);
       fs.writeFileSync('./build/index.html', html);
