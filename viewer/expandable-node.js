@@ -1,8 +1,8 @@
-import React, {Component} from 'react';
+import React, {PureComponent} from 'react';
 import {WrapNode} from './wrap-node';
 import {Node} from './node';
 
-export class ExpandableTree extends Component {
+export class ExpandableTree extends PureComponent {
   renderNode = () => {
     return <Node
       {...this.props}

@@ -1,8 +1,8 @@
-import React, {Component} from 'react';
+import React, {PureComponent} from 'react';
 import {WrapNode} from './wrap-node';
 import {Node} from './node';
 
-export class StaticTree extends Component {
+export class StaticTree extends PureComponent {
   flatItems = (items) => items.reduce((acc, item) => {
     if (item.type === 'type') {
       const declaration = this.props.declarations[item.declarationId];

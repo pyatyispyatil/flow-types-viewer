@@ -1,11 +1,11 @@
-import React, {Component} from 'react';
+import React, {PureComponent} from 'react';
 import styles from './styles.scss';
 
 //https://youtrack.jetbrains.com/issue/WEB-21774
 const cs = '{';
 const ce = '}';
 
-export class Node extends Component {
+export class Node extends PureComponent {
   getAssets(node) {
     const {parameters, args, node: currentNode, parent, declarations} = this.props;
 

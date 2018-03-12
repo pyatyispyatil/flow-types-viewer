@@ -1,10 +1,10 @@
-import React, {Component, Fragment} from 'react';
+import React, {PureComponent, Fragment} from 'react';
 
 import styles from './styles.scss';
 import {cn} from './utils';
 
 
-export class WrapNode extends Component {
+export class WrapNode extends PureComponent {
   state = {
     collapsed: true
   };

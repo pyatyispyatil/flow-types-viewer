@@ -2,9 +2,19 @@ body {
   font-family: monospace;
 }
 
-.hover {
-  &:hover {
-    background: #b4b4b4;
+.header {
+  padding: 4px;
+}
+
+.root {
+  padding-left: 8px;
+
+  &.nestingVisualization {
+    .typeObject, .typeObjectProp, .typeParametrizedGeneric, .typeIntersectionItem {
+      &:hover {
+        background: rgba(100, 100, 100, 0.1);
+      }
+    }
   }
 }
 
