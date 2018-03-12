@@ -12,7 +12,7 @@ export class WrapNode extends PureComponent {
   handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
   render() {
-    const {node, children, className, force} = this.props;
+    const {node, children, className, force, parentName} = this.props;
     const {collapsed} = this.state;
     const canWrap = force || (node.name && !node.declarationId && (!node.builtin || node.genericName !== node.name));
 
@@ -22,6 +22,13 @@ export class WrapNode extends PureComponent {
           canWrap ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
+                {
+                  parentName && node.name ? (
+                    <div className={styles.nodeParentTitle}>
+                      {parentName}
+                    </div>
+                  ) : null
+                }
                 {node.name}
                 {node.parameters ? (
                   `<${node.parameters.map(({name}) => name).join(', ')}>`

@@ -11,10 +11,10 @@ export class ExpandableTree extends PureComponent {
   };
 
   render() {
-    const {node, className} = this.props;
+    const {className} = this.props;
 
     return (
-      <WrapNode className={className} node={node}>
+      <WrapNode className={className} {...this.props}>
         {this.renderNode()}
       </WrapNode>
     )

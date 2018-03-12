@@ -35,6 +35,15 @@ body {
 
 .nodeTitle {
   font-weight: bold;
+  display: flex;
+}
+
+.nodeParentTitle {
+  &:after {
+    content: '<-';
+    padding-right: 4px;
+    padding-left: 4px;
+  }
 }
 
 .nodeChildrenWrapper {
@@ -112,11 +121,7 @@ body {
 }
 
 .typeParametrizedGenericName {
-  &:after {
-    content: '<-';
-    padding-right: 4px;
-    padding-left: 4px;
-  }
+  display: flex;
 }
 
 .typeGeneric {

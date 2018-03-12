@@ -24,7 +24,7 @@ export class Node extends PureComponent {
   }
 
   render() {
-    const {node, render, declarations} = this.props;
+    const {node, render, declarations, parentName} = this.props;
     const declaration = declarations[node.declarationId];
 
     switch (node.type) {
@@ -38,24 +38,28 @@ export class Node extends PureComponent {
         if (declaration && node.value) {
           return (
             <div className={styles.typeParametrizedGeneric}>
-              {
-                node.name ? (
-                  <div className={styles.typeParametrizedGenericName}>
-                    {node.name}
-                  </div>
-                ) : null
-              }
-              {render(Object.assign(this.getAssets(declaration), {args: node.value}))}
+              {render(Object.assign(this.getAssets(declaration), {args: node.value, parentName: node.name}))}
             </div>
           )
         } else {
+          const name = node.genericName || node.name || parentName;
+
           return (
             <div className={styles.typeGeneric}>
-              {node.genericName + '<'}
               {
-                node.value.map((val) => render(this.getAssets(val)))
+                name
               }
-              {'>'}
+              {
+                name ? (
+                  <div className={styles.typeParametrizedGenericName}>
+                    {'<'}
+                    {
+                      node.value.map((val) => render(this.getAssets(val)))
+                    }
+                    {'>'}
+                  </div>
+                ) : null
+              }
             </div>
           );
         }

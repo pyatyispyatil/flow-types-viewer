@@ -60,11 +60,11 @@ export class StaticTree extends PureComponent {
   };
 
   render() {
-    const {isRoot, node, className} = this.props;
+    const {isRoot, className} = this.props;
 
     if (isRoot) {
       return (
-        <WrapNode className={className} node={node} force>
+        <WrapNode className={className} {...this.props} force>
           {this.renderNode()}
         </WrapNode>
       );
