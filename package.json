@@ -2,7 +2,8 @@
   "name": "flow-types-viewer",
   "version": "0.3.2",
   "description": "Util to view flow types in project",
-  "main": "index.js",
+  "main": "./index.js",
+  "bin": "./cli.js",
   "scripts": {
     "start": "node index.js",
     "build": "parcel build viewer/index.js -d ./build -o viewer.js && npm run start",
