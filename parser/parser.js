@@ -218,7 +218,7 @@ const typeToObject = (type, path, files) => {
   }
 };
 
-const getDeclarations = (paths, files) => {
+const parse = (paths, files) => {
   const typesInPaths = paths.map((path) => ({
       path,
       types: getTypesNames(path, files)
@@ -238,7 +238,4 @@ const getDeclarations = (paths, files) => {
 };
 
 
-module.exports = {
-  getDeclarations,
-  getDetailedType
-};
+module.exports = parse;

@@ -5,7 +5,6 @@ const path = require('path');
 const {memoize} = require('./utils');
 
 
-
 const typeToString = (type) => {
   switch (type.type) {
     case 'NumberTypeAnnotation':
@@ -188,6 +187,4 @@ const makeAST = (...paths) => {
     }, {});
 };
 
-module.exports = {
-  makeAST
-};
+module.exports = makeAST;
