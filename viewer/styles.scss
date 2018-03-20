@@ -1,16 +1,23 @@
+$space: 4px;
+$propTab: 12px;
+
 body {
   font-family: monospace;
 }
 
+.hidden {
+  display: none!important;
+}
+
 .header {
-  padding: 4px;
+  padding: $space;
 }
 
 .root {
   padding-left: 8px;
 
   &.nestingVisualization {
-    .typeObject, .typeObjectProp, .typeParametrizedGeneric, .typeIntersectionItem {
+    .typeObject, .typeObjectProp, .typeParametrizedGeneric, .typeIntersectionItem, .typeFunctionArg {
       &:hover {
         background: rgba(100, 100, 100, 0.1);
       }
@@ -20,7 +27,12 @@ body {
 
 .toolbar {
   display: flex;
-  padding: 4px;
+  padding: $space;
+}
+
+.verticalToolbar {
+  display: flex;
+  flex-direction: column;
 }
 
 .checkbox {
@@ -33,6 +45,21 @@ body {
   cursor: pointer;
 }
 
+.types {
+  padding-top: 10px;
+}
+
+.path {
+  padding: 51px 6px 14px 6px;
+  font-size: 14px;
+}
+
+.moduleName {
+  padding: $space;
+  font-weight: bold;
+  font-size: 16px;
+}
+
 .nodeTitle {
   font-weight: bold;
   display: flex;
@@ -41,8 +68,8 @@ body {
 .nodeParentTitle {
   &:after {
     content: '<-';
-    padding-right: 4px;
-    padding-left: 4px;
+    padding-right: $space;
+    padding-left: $space;
   }
 }
 
@@ -56,7 +83,7 @@ body {
       font-size: 20px;
       font-weight: bold;
       padding-top: 2px;
-      padding-right: 4px;
+      padding-right: $space;
     }
   }
 }
@@ -70,8 +97,8 @@ body {
 }
 
 .typeIntersectionItem {
-  padding-left: 4px;
-  padding-right: 4px;
+  padding-left: $space;
+  padding-right: $space;
   display: flex;
 
   &:not(:first-child) {
@@ -87,17 +114,20 @@ body {
 }
 
 .typeObject {
+  &.typeObjectEmpty {
+    display: flex;
+  }
 }
 
 .typeObjectKey {
 }
 
 .typeObjectValue {
-  padding-left: 4px;
+  padding-left: $space;
 }
 
 .typeObjectChildren {
-  padding-left: 12px;
+  padding-left: $propTab;
 }
 
 .typeObjectProp {
@@ -109,7 +139,7 @@ body {
 }
 
 .typeObjectIndexValue {
-  padding-left: 4px;
+  padding-left: $space;
 }
 
 .typeUnionItem {
@@ -120,19 +150,77 @@ body {
   display: flex;
 }
 
-.typeParametrizedGenericName {
+.typeParametrizedGenericArguments {
   display: flex;
+}
+
+.typeParametrizedGenericArgument {
+  display: flex;
+
+  &:not(:first-child):before {
+    content: ',';
+    padding-right: $space;
+  }
 }
 
 .typeGeneric {
   display: flex;
 }
 
-.rootType {
-  padding-top: 10px;
+.typeFunction {
+  display: flex;
+
+  &.typeFunctionManyArgs {
+    display: block;
+  }
 }
 
-.path {
-  padding: 51px 6px 14px 6px;
-  font-size: 14px;
+.typeFunctionArgs {
+  display: flex;
+
+  &.typeFunctionManyArgs {
+    display: block;
+  }
+}
+
+.typeFunctionArg {
+  display: flex;
+
+  &.typeFunctionManyArgs {
+    padding-left: $propTab;
+  }
+
+  &:not(:last-child) {
+    &:after {
+      content: ',';
+      padding-right: $space;
+    }
+  }
+}
+
+.typeFunctionArgType {
+}
+
+.typeFunctionArgName {
+  &:after {
+    content: ':';
+    padding-right: $space;
+  }
+}
+
+.typeFunctionEnding {
+  display: flex;
+}
+
+.typeFunctionReturn {
+  display: flex;
+
+  &:before {
+    content: '=>';
+    padding: 0 $space;
+  }
+
+  &.typeFunctionManyArgs {
+    padding-left: 8px;
+  }
 }

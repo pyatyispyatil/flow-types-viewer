@@ -1,25 +1,32 @@
 import React, {PureComponent} from 'react';
 import {WrapNode} from './wrap-node';
 import {Node} from './node';
+import {ExpandableTree} from './expandable-tree';
 
 export class StaticTree extends PureComponent {
-  flatItems = (items) => items.reduce((acc, item) => {
-    if (item.type === 'type') {
-      const declaration = this.props.declarations[item.declarationId];
+  flatItems = (items) => {
+    const {nodeView: {flatIntersections, flatObjects}} = this.props;
 
-      if (declaration) {
-        return acc.concat(...(
-          declaration.type === 'intersection' ? this.flatItems(declaration.value) : declaration.value
-        ));
+    return items.reduce((acc, item) => {
+      if (item.type === 'type') {
+        const declaration = this.props.declarations[item.declarationId];
+
+        if (declaration) {
+          if (declaration.type === 'intersection') {
+            return acc.concat(...this.flatItems(declaration.value))
+          } else {
+            return acc.concat(...declaration.value);
+          }
+        }
+      } else if (item.type === 'object' && item.value) {
+        return acc.concat(...item.value.map(this.expandDeclarations));
+      } else {
+        return acc.concat(item);
       }
-    } else if (item.type === 'object' && item.value) {
-      return acc.concat(...item.value.map(this.expandDeclarations));
-    } else {
-      return acc.concat(item);
-    }
 
-    return acc;
-  }, []);
+      return acc;
+    }, []);
+  };
 
   expandDeclarations = (node) => {
     const value = node.type === 'intersection' ? this.flatItems(node.value) : {};
@@ -29,7 +36,6 @@ export class StaticTree extends PureComponent {
       ...(
         value ? {
           value,
-          indexers: [],
           type: 'object'
         } : {}
       )
@@ -43,19 +49,23 @@ export class StaticTree extends PureComponent {
       return null;
     }
 
-    if (parents.filter((parent) => parent === node.name).length < 2) {
-      const newNode = this.expandDeclarations(node);
-      const newParents = !node.builtin ? parents.concat(node.name) : parents;
+    if (parents.filter((parent) => node.name && parent === node.name).length < 2) {
+      if (node.type === 'function') {
+        return <ExpandableTree {...this.props}/>
+      } else {
+        const newNode = this.expandDeclarations(node);
+        const newParents = !node.builtin ? parents.concat(node.name) : parents;
 
-      return (
-        <Node
-          {...this.props}
-          node={newNode}
-          render={(props) => <StaticTree {...props} parents={newParents}/>}
-        />
-      );
+        return (
+          <Node
+            {...this.props}
+            node={newNode}
+            render={(props) => <StaticTree {...props} parents={newParents}/>}
+          />
+        );
+      }
     } else {
-      return <StaticTree node={node} parents={[node.name]} isRoot={true}/>;
+      return <StaticTree {...this.props} node={node} parents={[node.name]} isRoot={true}/>;
     }
   };
 

@@ -5,29 +5,6 @@ const path = require('path');
 const {memoize} = require('./utils');
 
 
-const typeToString = (type) => {
-  switch (type.type) {
-    case 'NumberTypeAnnotation':
-      return 'number';
-    case 'StringTypeAnnotation':
-      return 'string';
-    case 'BooleanTypeAnnotation':
-      return 'boolean';
-    case 'GenericTypeAnnotation':
-      return `${type.id.name}${
-        type.typeParameters ? `<${type.typeParameters.params.map(typeToString).join(', ')}>` : ''
-        }`;
-    case 'IntersectionTypeAnnotation':
-      return type.types.map(typeToString).join(' & ');
-    case 'ObjectTypeAnnotation':
-      return `{ ${type.properties.map((prop) => `${prop.key.name}${prop.optional ? '?' : ''}: ${typeToString(prop.value)}`).join(', ')} }`;
-    case 'ExistsTypeAnnotation':
-      return '*';
-    default:
-      return '';
-  }
-};
-
 const getGenericTypes = (type) => {
   switch (type.type) {
     case 'GenericTypeAnnotation':

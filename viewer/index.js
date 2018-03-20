@@ -8,6 +8,7 @@ ReactDOM.render(
   <Root
     types={DATA.types}
     declarations={DATA.declarations}
+    modules={DATA.modules}
   />,
   document.getElementById('root')
 );

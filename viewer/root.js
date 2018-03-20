@@ -2,11 +2,12 @@ import React, {PureComponent} from 'react';
 
 import styles from './styles.scss';
 import {StaticTree} from './static-tree';
-import {ExpandableTree} from './expandable-node';
+import {ExpandableTree} from './expandable-tree';
 import {Checkbox} from './components';
 import {cn} from './utils';
 
-const compareByName = ({name: fName}, {name: sName}) => fName.localeCompare(sName);
+const compareById = ({id: {name: fName, parameters: fParameters}},
+                     {id: {name: sName, parameters: sParameters}}) => fName.localeCompare(sName) || fParameters.length - sParameters.length;
 const byFirst = ([first], [second]) => first.localeCompare(second);
 
 const getSortedTypesEntries = (typesEntries) =>
@@ -15,12 +16,12 @@ const getSortedTypesEntries = (typesEntries) =>
       ...acc,
       [
         path,
-        pathTypes.slice().sort(compareByName)
+        pathTypes.slice().sort(compareById)
       ]
     ], [])
     .sort(byFirst);
 
-const getSortedTypes = (types) => types.slice().sort(compareByName);
+const getSortedTypes = (types) => types.slice().sort(compareById);
 
 const getFilteredTypes = (types, searchWord) => (
   searchWord ? (
@@ -32,7 +33,7 @@ const getFilteredTypes = (types, searchWord) => (
 
 class Directories extends PureComponent {
   render() {
-    const {typesEntries, searchWord, declarations, flatMode} = this.props;
+    const {typesEntries, searchWord, declarations, nodeView} = this.props;
 
     return getSortedTypesEntries(typesEntries)
       .map(([path, pathTypes]) => {
@@ -46,7 +47,7 @@ class Directories extends PureComponent {
             <Types
               types={filteredTypes}
               declarations={declarations}
-              flatMode={flatMode}
+              nodeView={nodeView}
             />
           </div>
         ) : (null)
@@ -56,15 +57,25 @@ class Directories extends PureComponent {
 
 class Types extends PureComponent {
   render() {
-    const {declarations, flatMode, types} = this.props;
+    const {declarations, types, nodeView} = this.props;
 
     return types.map((type) => (
-      <div className={styles.rootType}>
+      <div className={styles.types}>
         {
-          flatMode ? (
-            <StaticTree declarations={declarations} node={type} isRoot={true}/>
+          nodeView.flatMode ? (
+            <StaticTree
+              declarations={declarations}
+              node={type}
+              isRoot={true}
+              nodeView={nodeView}
+            />
           ) : (
-            <ExpandableTree declarations={declarations} node={type} isRoot={true}/>
+            <ExpandableTree
+              declarations={declarations}
+              node={type}
+              isRoot={true}
+              nodeView={nodeView}
+            />
           )
         }
       </div>
@@ -74,71 +85,163 @@ class Types extends PureComponent {
 
 class SortedTypes extends PureComponent {
   render() {
-    const {types, searchWord, declarations, flatMode} = this.props;
+    const {types, searchWord, declarations, nodeView} = this.props;
 
     return (
       <Types
         types={getSortedTypes(getFilteredTypes(types, searchWord))}
         declarations={declarations}
-        flatMode={flatMode}
+        nodeView={nodeView}
       />
     );
+  }
+}
+
+class Modules extends PureComponent {
+  render() {
+    const {
+      files, searchWord, declarations, nodeView
+    } = this.props;
+
+    return (
+      <div>
+        {
+          files.map(([path, modules]) => (
+            <div>
+              <div className={styles.path}>
+                {path}
+              </div>
+              {
+                Object.entries(modules).map(([name, types]) => (
+                  <div>
+                    <div className={styles.moduleName}>
+                      {name}
+                    </div>
+                    <Types
+                      types={getSortedTypes(getFilteredTypes(types, searchWord))}
+                      declarations={declarations}
+                      nodeView={nodeView}
+                    />
+                  </div>
+                ))
+              }
+            </div>
+          ))
+        }
+      </div>
+    )
   }
 }
 
 export class Root extends PureComponent {
   state = {
     searchWord: '',
-    flatMode: false,
     showDirectories: true,
-    nestingVisualization: true
+    nodeView: {
+      flatMode: false,
+      flatIntersections: true,
+      flatObjects: false
+    },
+    nestingVisualization: true,
   };
 
-  render() {
-    const {types, declarations} = this.props;
-    const {searchWord, showDirectories, flatMode, nestingVisualization} = this.state;
-    const typesEntries = Object.entries(types);
-    const allTypes = typesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), []);
+  changeNodeView(name, value) {
+    this.setState({
+      nodeView: {
+        ...this.state.nodeView,
+        [name]: value
+      }
+    })
+  }
+
+  renderHeader(allTypes) {
+    const {
+      searchWord,
+      showDirectories,
+      nestingVisualization,
+      nodeView
+    } = this.state;
 
     return (
-      <div className={styles.base}>
-        <div className={styles.header}>
-          <div className={styles.toolbar}>
-            Total count: {allTypes.length}
+      <div className={styles.header}>
+        <div className={styles.toolbar}>
+          Total count: {allTypes.length}
+        </div>
+        <div className={styles.toolbar}>
+          <div className={styles.search}>
+            Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
           </div>
-          <div className={styles.toolbar}>
-            <div className={styles.search}>
-              Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
-            </div>
+          <div className={styles.verticalToolbar}>
             <Checkbox
-              value={flatMode}
-              onChange={(flatMode) => this.setState({flatMode})}
+              value={nodeView.flatMode}
+              onChange={(value) => this.changeNodeView('flatMode', value)}
             >
               Flat mode
             </Checkbox>
-            <Checkbox
-              value={showDirectories}
-              onChange={(showDirectories) => this.setState({showDirectories})}
-            >
-              Show directories
-            </Checkbox>
-            <Checkbox
-              value={nestingVisualization}
-              onChange={(nestingVisualization) => this.setState({nestingVisualization})}
-            >
-              Nesting visualization
-            </Checkbox>
+{/*            <div className={cn(styles.verticalToolbar, {[styles.hidden]: !nodeView.flatMode})}>
+              <Checkbox
+                value={nodeView.flatIntersections}
+                onChange={(value) => this.changeNodeView('flatIntersections', value)}
+              >
+                Flat Intersections
+              </Checkbox>
+              <Checkbox
+                value={nodeView.flatObjects}
+                onChange={(value) => this.changeNodeView('flatObjects', value)}
+              >
+                Flat Objects
+              </Checkbox>
+            </div>*/}
           </div>
-          {
-            searchWord ? (
-              <div className={styles.toolbar}>
-                Found: {
-                allTypes.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0).length
-              }
-              </div>
-            ) : null
-          }
+          <Checkbox
+            value={showDirectories}
+            onChange={(showDirectories) => this.setState({showDirectories})}
+          >
+            Show directories
+          </Checkbox>
+          <Checkbox
+            value={nestingVisualization}
+            onChange={(nestingVisualization) => this.setState({nestingVisualization})}
+          >
+            Nesting visualization
+          </Checkbox>
         </div>
+        {
+          searchWord ? (
+            <div className={styles.toolbar}>
+              Found: {
+              allTypes.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0).length
+            }
+            </div>
+          ) : null
+        }
+      </div>
+    )
+  }
+
+  render() {
+    const {types, declarations, modules} = this.props;
+    const {
+      searchWord,
+      showDirectories,
+      nestingVisualization,
+      nodeView
+    } = this.state;
+    const typesEntries = types ? Object.entries(types) : [];
+    const modulesEntries = modules ? Object.entries(modules) : [];
+    const modulesTypesEntries = modulesEntries
+      .map(([path, module]) => Object.entries(module)
+        .reduce((acc, [name, types]) => [...acc, ...types]), []);
+    const allTypes = [
+      ...modulesTypesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), []),
+      ...typesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), [])
+    ];
+
+    return (
+      <div className={styles.base}>
+        {
+          this.renderHeader(allTypes)
+        }
         <div className={cn(
           styles.root, {
             [styles.nestingVisualization]: nestingVisualization
@@ -150,16 +253,26 @@ export class Root extends PureComponent {
                 typesEntries={typesEntries}
                 searchWord={searchWord}
                 declarations={declarations}
-                flatMode={flatMode}
+                nodeView={nodeView}
               />
             ) : (
               <SortedTypes
                 types={allTypes}
                 searchWord={searchWord}
                 declarations={declarations}
-                flatMode={flatMode}
+                nodeView={nodeView}
               />
             )
+          }
+          {
+            modulesEntries && modulesEntries.length ? (
+              <Modules
+                files={modulesEntries}
+                searchWord={searchWord}
+                declarations={declarations}
+                nodeView={nodeView}
+              />
+            ) : null
           }
         </div>
       </div>

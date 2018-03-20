@@ -31,6 +31,7 @@ const getFlowFiles = (paths) => getFlatFiles(paths).filter((path) => /^.*?\.js(\
 
 const run = (args) => {
   const cwd = process.cwd();
+  const buildDir = './flow-types-viewer/';
 
   if (args.length) {
     const commands = args.filter((arg) => COMMANDS_KEYS.includes(arg)).map((arg) => COMMANDS[arg]).filter(Boolean);
@@ -64,7 +65,7 @@ const run = (args) => {
 
         }
 
-        fs.writeFileSync(path.resolve(cwd, './flow-types-viewer/index.html'), html);
+        fs.writeFileSync(path.resolve(cwd, buildDir + 'index.html'), html);
         console.log('index.html was created');
       }
 
@@ -79,8 +80,8 @@ const run = (args) => {
 
         }
 
-        fs.copyFileSync('./build/viewer.js', path.resolve(cwd, './flow-types-viewer/viewer.js'));
-        fs.copyFileSync('./build/viewer.css', path.resolve(cwd, './flow-types-viewer/viewer.css'));
+        fs.copyFileSync('./build/viewer.js', path.resolve(cwd, buildDir + 'viewer.js'));
+        fs.copyFileSync('./build/viewer.css', path.resolve(cwd, buildDir + 'viewer.css'));
         console.log('Viewer ready');
       }
 
