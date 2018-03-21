@@ -49,12 +49,12 @@ export class StaticTree extends PureComponent {
       return null;
     }
 
-    if (parents.filter((parent) => node.name && parent === node.name).length < 2) {
+    if (parents.filter((parent) => node.id && (parent === node.id.name)).length < 2) {
       if (node.type === 'function') {
-        return <ExpandableTree {...this.props}/>
+        return <ExpandableTree {...this.props} isRoot={true}/>
       } else {
         const newNode = this.expandDeclarations(node);
-        const newParents = !node.builtin ? parents.concat(node.name) : parents;
+        const newParents = !node.builtin && node.id ? parents.concat(node.id.name) : parents;
 
         return (
           <Node
@@ -65,7 +65,7 @@ export class StaticTree extends PureComponent {
         );
       }
     } else {
-      return <StaticTree {...this.props} node={node} parents={[node.name]} isRoot={true}/>;
+      return <StaticTree {...this.props} node={node} parents={node.id ? [node.id.name] : []} isRoot={true}/>;
     }
   };
 
