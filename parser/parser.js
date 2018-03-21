@@ -268,7 +268,7 @@ const typeToObject = (type, path, files) => {
     case 'FunctionTypeAnnotation':
       return {
         type: 'function',
-        returnType: typeToObject(type.returnType),
+        returnType: typeToObject(type.returnType, path, files),
         args: type.params.map((arg) => ({
           name: arg.name && arg.name.name,
           value: typeToObject(arg.typeAnnotation, path, files)

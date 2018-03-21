@@ -9,7 +9,7 @@ const makeCommands = (...commands) => commands
     [`-${com.substr(0, 1)}`]: com
   }), {});
 
-const COMMANDS = makeCommands('json', 'text', 'viewer');
+const COMMANDS = makeCommands('json', 'text', 'viewer', 'dev');
 const COMMANDS_KEYS = Object.keys(COMMANDS);
 
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
@@ -31,12 +31,13 @@ const getFlowFiles = (paths) => getFlatFiles(paths).filter((path) => /^.*?\.js(\
 
 const run = (args) => {
   const cwd = process.cwd();
-  const buildDir = './flow-types-viewer/';
 
   if (args.length) {
     const commands = args.filter((arg) => COMMANDS_KEYS.includes(arg)).map((arg) => COMMANDS[arg]).filter(Boolean);
     const argsPaths = args.filter((arg) => !COMMANDS_KEYS.includes(arg)).map((argPath) => path.resolve(cwd, argPath));
+
     const isTextMode = commands.includes('text');
+    const buildDir = commands.includes('dev') ? './build/':  './flow-types-viewer/';
 
     try {
       if (!isTextMode) {
