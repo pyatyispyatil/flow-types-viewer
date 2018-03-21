@@ -25,7 +25,7 @@ const getSortedTypes = (types) => types.slice().sort(compareById);
 
 const getFilteredTypes = (types, searchWord) => (
   searchWord ? (
-    types.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0)
+    types.filter(({id: {name}}) => name.toLowerCase().indexOf(searchWord) === 0)
   ) : (
     types
   )
@@ -106,27 +106,35 @@ class Modules extends PureComponent {
     return (
       <div>
         {
-          files.map(([path, modules]) => (
-            <div>
-              <div className={styles.path}>
-                {path}
+          files.map(([path, modules]) => {
+            const preparedModules = Object.entries(modules)
+              .map(([name, types]) => [name, getSortedTypes(getFilteredTypes(types, searchWord))])
+              .filter(([, types]) => types.length);
+
+            return preparedModules.length ? (
+              <div>
+                <div className={styles.path}>
+                  {path}
+                </div>
+                {
+                  preparedModules.map(([name, types]) => {
+                    return (
+                      <div>
+                        <div className={styles.moduleName}>
+                          {name}
+                        </div>
+                        <Types
+                          types={types}
+                          declarations={declarations}
+                          nodeView={nodeView}
+                        />
+                      </div>
+                    )
+                  })
+                }
               </div>
-              {
-                Object.entries(modules).map(([name, types]) => (
-                  <div>
-                    <div className={styles.moduleName}>
-                      {name}
-                    </div>
-                    <Types
-                      types={getSortedTypes(getFilteredTypes(types, searchWord))}
-                      declarations={declarations}
-                      nodeView={nodeView}
-                    />
-                  </div>
-                ))
-              }
-            </div>
-          ))
+            ) : null
+          })
         }
       </div>
     )
@@ -210,7 +218,7 @@ export class Root extends PureComponent {
           searchWord ? (
             <div className={styles.toolbar}>
               Found: {
-              allTypes.filter(({name}) => name.toLowerCase().indexOf(searchWord) === 0).length
+              allTypes.filter(({id: {name}}) => name.toLowerCase().indexOf(searchWord) === 0).length
             }
             </div>
           ) : null

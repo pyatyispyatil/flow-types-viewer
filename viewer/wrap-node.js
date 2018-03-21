@@ -14,7 +14,7 @@ export class WrapNode extends PureComponent {
   render() {
     const {node, children, className, force, parent} = this.props;
     const {collapsed} = this.state;
-    const canWrap = force || (node.id && node.id.name && !node.declarationId && (!node.builtin || node.genericName !== node.name));
+    const canWrap = force || (node.id && node.id.name && !node.declarationId && (!node.builtin || node.genericName !== node.id.name));
     const nodeHasContent = node.value || node.args || node.returnType;
 
     return (

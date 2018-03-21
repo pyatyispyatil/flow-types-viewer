@@ -17,13 +17,13 @@ export class Node extends PureComponent {
           [currentNode.parameters[index].name]: arg
         }), {}) : parameters;
 
-    const newNode = parent && parent.type ? (
-      (constructedParameters && constructedParameters[node.id && node.id.name]) || node
+    const newNode = parent && constructedParameters ? (
+      (constructedParameters[node.id ? node.id.name : node.genericName]) || node
     ) : node;
 
     return {
       node: newNode,
-      parent: args ? node : parent,
+      parent: args ? parent : currentNode,
       parameters: constructedParameters,
       declarations,
       nodeView
