@@ -3,17 +3,9 @@ const path = require('path');
 const exec = require('child_process').execSync;
 const getData = require('./index');
 
-const makeCommands = (...commands) => commands
-  .reduce((acc, com) => Object.assign(acc, {
-    [`--${com}`]: com,
-    [`-${com.substr(0, 1)}`]: com
-  }), {});
-
-const COMMANDS = makeCommands('json', 'text', 'viewer', 'dev');
-const COMMANDS_KEYS = Object.keys(COMMANDS);
 
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
-  const newPath = path.resolve(parentPath || __dirname, item);
+  const newPath = path.resolve(parentPath, item);
 
   if (fs.lstatSync(newPath).isDirectory()) {
     try {
@@ -27,24 +19,30 @@ const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, 
   return flattedDir;
 }, acc);
 
-const getFlowFiles = (paths) => getFlatFiles(paths).filter((path) => /^.*?\.js(\.flow)?$/.test(path));
+const getFlowFiles = (paths, cwd) => getFlatFiles(paths, cwd).filter((path) => /^.*?\.js(\.flow)?$/.test(path));
 
-const run = (args) => {
+const createBuildDir = (cwd, buildDir) => {
+  try {
+    fs.mkdirSync(path.resolve(cwd, buildDir));
+  } catch (err) {
+
+  }
+};
+
+const run = (...args) => {
   const cwd = process.cwd();
 
-  if (args.length) {
-    const commands = args.filter((arg) => COMMANDS_KEYS.includes(arg)).map((arg) => COMMANDS[arg]).filter(Boolean);
-    const argsPaths = args.filter((arg) => !COMMANDS_KEYS.includes(arg)).map((argPath) => path.resolve(cwd, argPath));
-
-    const isTextMode = commands.includes('text');
-    const buildDir = commands.includes('dev') ? './build/':  './flow-types-viewer/';
+  if (args.length > 1) {
+    const [options, ...argsPaths] = args.reverse();
+    const isTextMode = options.text;
+    const buildDir = options.buildDir;
 
     try {
       if (!isTextMode) {
         console.log('Parsing started');
       }
 
-      const paths = getFlowFiles(argsPaths);
+      const paths = getFlowFiles(argsPaths, cwd);
       const data = getData(paths);
 
       if (!isTextMode) {
@@ -55,34 +53,30 @@ const run = (args) => {
 
       if (isTextMode) {
         console.log(dataJson)
-      } else if (commands.includes('json')) {
-        fs.writeFileSync(path.resolve(cwd, './flow-types-viewer.output.json'), dataJson);
+      } else if (options.json) {
+        const jsonPath = path.resolve(cwd, options.json === true ? './output.json' : options.json);
+
+        fs.writeFileSync(jsonPath, dataJson);
+        console.log(`${jsonPath} was created`);
       } else {
         const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, dataJson);
+        const htmlPath = path.resolve(cwd, buildDir, 'index.html');
 
-        try {
-          fs.mkdirSync(path.resolve(cwd, 'flow-types-viewer'));
-        } catch (err) {
+        createBuildDir(cwd, buildDir);
 
-        }
-
-        fs.writeFileSync(path.resolve(cwd, buildDir + 'index.html'), html);
-        console.log('index.html was created');
+        fs.writeFileSync(htmlPath, html);
+        console.log(`${htmlPath} was created`);
       }
 
-      if (commands.includes('viewer')) {
+      if (options.viewer) {
         exec('npm i');
         console.log('Node modules installed');
         exec('npm run build');
 
-        try {
-          fs.mkdirSync(path.resolve(cwd), 'flow-types-viewer');
-        } catch (err) {
+        createBuildDir(cwd, buildDir);
 
-        }
-
-        fs.copyFileSync('./build/viewer.js', path.resolve(cwd, buildDir + 'viewer.js'));
-        fs.copyFileSync('./build/viewer.css', path.resolve(cwd, buildDir + 'viewer.css'));
+        fs.copyFileSync('./build/viewer.js', path.resolve(cwd, buildDir, 'viewer.js'));
+        fs.copyFileSync('./build/viewer.css', path.resolve(cwd, buildDir, 'viewer.css'));
         console.log('Viewer ready');
       }
 
