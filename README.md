@@ -1,6 +1,6 @@
 ## flow-types-viewer
 
-Creates an abstract tree view that encompasses all types in files and all dependencies types and built in types
+Creates an abstract tree view, that encompasses all types in given files and all dependent and built in types
 
 #### Installation
 ```
