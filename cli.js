@@ -3,7 +3,7 @@
 "use strict";
 
 const program = require('commander');
-const packageJson = require('./package');
+const packageJson = require('./package.json');
 const run = require('./parser/cli');
 
 program
