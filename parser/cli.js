@@ -1,8 +1,24 @@
 const fs = require('fs');
 const path = require('path');
 const exec = require('child_process').execSync;
+const axios = require('axios');
+
 const getData = require('./index');
 
+const libsRoot = 'https://raw.githubusercontent.com/facebook/flow/v0.67.0/lib/';
+const builtinsNames = [
+  'bom.js',
+  'core.js',
+  'cssom.js',
+  'dom.js',
+  'indexeddb.js',
+  'node.js',
+  'react-dom.js',
+  'react.js',
+  'serviceworkers.js',
+  'streams.js',
+];
+const builtinsUrls = builtinsNames.map((url) => libsRoot + url);
 
 const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, item) => {
   const newPath = path.resolve(parentPath, item);
@@ -29,7 +45,7 @@ const createBuildDir = (cwd, buildDir) => {
   }
 };
 
-const run = (...args) => {
+const run = async (...args) => {
   const cwd = process.cwd();
 
   if (args.length > 1) {
@@ -40,6 +56,20 @@ const run = (...args) => {
     try {
       if (!isTextMode) {
         console.log('Parsing started');
+      }
+
+      try {
+        const builtins = await Promise.all(builtinsUrls.map((url) => axios(url).then(({data}) => data)));
+
+        try {
+          fs.mkdirSync('./builtins');
+        } catch (error) {
+
+        }
+
+        builtins.forEach((body, index) => fs.writeFileSync(path.resolve('./builtins', builtinsNames[index]), body));
+      } catch (error) {
+
       }
 
       const paths = getFlowFiles(argsPaths, cwd);
@@ -79,7 +109,6 @@ const run = (...args) => {
         fs.copyFileSync('./build/viewer.css', path.resolve(cwd, buildDir, 'viewer.css'));
         console.log('Viewer ready');
       }
-
     } catch (error) {
       console.log('Parsing failed');
       console.error(error);

@@ -18,7 +18,35 @@ const memoize = (fn) => {
   }
 };
 
+const declarationByType = (...types) => (node) => (
+  types.includes(node.type)
+);
+
+const specifierByLocalName = (...names) => (specifier) => names.includes(specifier.local && specifier.local.name);
+
+const TypesNodes = [
+  'DeclareVariable'
+];
+const isTypeNode = (node) => TypesNodes.includes(node.type);
+
+const primitiveTypes = [
+  'null',
+  'boolean',
+  'void',
+  'any',
+  'stringLiteral',
+  'primitive'
+];
+
+const isPrimitiveType = ({type}) => primitiveTypes.includes(type);
+
+const isNotPrimitiveType = (type) => !isPrimitiveType(type);
 
 module.exports = {
-  memoize
+  memoize,
+  declarationByType,
+  specifierByLocalName,
+  isTypeNode,
+  isPrimitiveType,
+  isNotPrimitiveType
 };

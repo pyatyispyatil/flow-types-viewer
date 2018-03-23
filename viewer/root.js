@@ -29,7 +29,7 @@ const getFilteredTypes = (types, searchWord) => (
   ) : (
     types
   )
-);
+)//.filter(({type}) => type === 'variable');
 
 class Directories extends PureComponent {
   render() {

@@ -30,7 +30,7 @@ export class Node extends PureComponent {
     }
   }
 
-  renderObjectProps = (prop) => {
+  renderObjectProp = (prop) => {
     const {render} = this.props;
 
     switch (prop.propType) {
@@ -146,11 +146,39 @@ export class Node extends PureComponent {
               hasContent ? (
                 <div className={styles.typeObjectChildren}>
                   {
-                    node.value.map(this.renderObjectProps)
+                    node.value.map(this.renderObjectProp)
                   }
                 </div>
               ) : null
             }
+            {ce}
+          </div>
+        );
+      case 'class':
+        return (
+          <div className={styles.typeClass}>
+            <div className={styles.typeClassHeader}>
+              <div className={styles.typeClassName}>
+                {
+                  node.id.name
+                }
+              </div>
+              {
+                node.parents.length ? (
+                  <div className={styles.typeObjectParent}>
+                    {
+                      node.parents.map((parent) => render(this.getAssets(parent)))
+                    }
+                  </div>
+                ) : null
+              }
+              {cs}
+            </div>
+            <div className={styles.typeObjectChildren}>
+              {
+                node.value.map(this.renderObjectProp)
+              }
+            </div>
             {ce}
           </div>
         );
@@ -184,6 +212,14 @@ export class Node extends PureComponent {
             </div>
           )
         }
+      case 'export':
+        return (
+          <div className={styles.typeExport}>
+            {
+              render(Object.assign(this.getAssets(declarations[node.value.declarationId]), {parent: null}))
+            }
+          </div>
+        );
       case 'primitive':
         return node.value;
       case 'void':
@@ -192,6 +228,21 @@ export class Node extends PureComponent {
         return `"${node.value}"`;
       case 'any':
         return <div className={styles.any}>any</div>;
+      case 'variable':
+        return (
+          <div className={styles.typeVariable}>
+            {
+              node.id.name
+            }
+            {
+              <div className={styles.typeVariableType}>
+                {
+                  render(Object.assign(this.getAssets(node.value), {parent: null}))
+                }
+              </div>
+            }
+          </div>
+        );
       default:
         return node.value || 'unhandled';
     }

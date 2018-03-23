@@ -224,3 +224,48 @@ body {
     padding-left: 8px;
   }
 }
+
+.typeClass {
+}
+
+.typeClassHeader {
+  display: flex;
+}
+
+.typeClassName {
+  display: flex;
+
+  &:before {
+    content: 'class';
+    padding-right: $space;
+  }
+}
+
+.typeObjectParent {
+  display: flex;
+  padding-right: $space;
+
+  &:before {
+    content: 'extends';
+    padding-right: $space;
+    padding-left: $space;
+  }
+}
+
+.typeVariable {
+  display: flex;
+
+  &:before {
+    content: 'var';
+    padding-right: $space;
+  }
+}
+
+.typeVariableType {
+  display: flex;
+
+  &:before {
+    content: ':';
+    padding-right: $space;
+  }
+}
