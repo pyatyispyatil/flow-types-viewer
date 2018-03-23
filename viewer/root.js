@@ -1,10 +1,10 @@
-import React, {PureComponent} from 'react';
+import React, {Fragment, PureComponent} from 'react';
 
 import styles from './styles.scss';
 import {StaticTree} from './static-tree';
 import {ExpandableTree} from './expandable-tree';
 import {Checkbox} from './components';
-import {cn} from './utils';
+import {cn, cutRoot} from './utils';
 
 const compareById = ({id: {name: fName, parameters: fParameters}},
                      {id: {name: sName, parameters: sParameters}}) => fName.localeCompare(sName) || fParameters.length - sParameters.length;
@@ -31,35 +31,72 @@ const getFilteredTypes = (types, searchWord) => (
   )
 );
 
+class Directory extends PureComponent {
+  state = {
+    collapsed: true
+  };
+
+  render() {
+    const {modules, searchWord, declarations, builtins, nodeView, path, types, title} = this.props;
+    const {collapsed} = this.state;
+
+    return (
+      <div>
+        <div className={cn(styles.path, {
+          [styles.collapsed]: collapsed
+        })} onClick={() => this.setState({collapsed: !collapsed})}>
+          {title}
+        </div>
+        {
+          !this.state.collapsed ? (
+            <Fragment>
+              <Types
+                types={types}
+                declarations={declarations}
+                builtins={builtins}
+                nodeView={nodeView}
+              />
+              {
+                modules[path] ? (
+                  <Modules
+                    modules={modules[path]}
+                    searchWord={searchWord}
+                    declarations={declarations}
+                    builtins={builtins}
+                    nodeView={nodeView}
+                  />
+                ) : null
+              }
+            </Fragment>
+          ) : null}
+      </div>
+    )
+  }
+}
+
 class Directories extends PureComponent {
   render() {
-    const {typesEntries, modules, searchWord, declarations, nodeView} = this.props;
+    const {typesEntries, modules, searchWord, declarations, builtins, nodeView} = this.props;
+    const entries = getSortedTypesEntries(typesEntries);
 
-    return getSortedTypesEntries(typesEntries)
-      .map(([path, pathTypes]) => {
+    //const root = entries.reduce((acc, [path]) => path., '');
+    const paths = entries.map(([path]) => path);
+    const rootlessPaths = cutRoot(paths);
+
+    return entries
+      .map(([path, pathTypes], index) => {
         const filteredTypes = getFilteredTypes(pathTypes, searchWord);
 
         return filteredTypes.length ? (
-          <div>
-            <div className={styles.path}>
-              {path}
-            </div>
-            <Types
-              types={filteredTypes}
-              declarations={declarations}
-              nodeView={nodeView}
-            />
-            {
-              modules[path] ? (
-                <Modules
-                  modules={modules[path]}
-                  searchWord={searchWord}
-                  declarations={declarations}
-                  nodeView={nodeView}
-                />
-              ) : null
-            }
-          </div>
+          <Directory
+            modules={modules}
+            declarations={declarations}
+            builtins={builtins}
+            nodeView={nodeView}
+            title={rootlessPaths[index]}
+            path={path}
+            types={filteredTypes}
+          />
         ) : (null)
       })
   }
@@ -67,7 +104,7 @@ class Directories extends PureComponent {
 
 class Types extends PureComponent {
   render() {
-    const {declarations, types, nodeView} = this.props;
+    const {declarations, builtins, types, nodeView} = this.props;
 
     return types.map((type) => (
       <div className={styles.types}>
@@ -75,6 +112,7 @@ class Types extends PureComponent {
           nodeView.flatMode ? (
             <StaticTree
               declarations={declarations}
+              builtins={builtins}
               node={type}
               isRoot={true}
               nodeView={nodeView}
@@ -82,6 +120,7 @@ class Types extends PureComponent {
           ) : (
             <ExpandableTree
               declarations={declarations}
+              builtins={builtins}
               node={type}
               isRoot={true}
               nodeView={nodeView}
@@ -95,12 +134,13 @@ class Types extends PureComponent {
 
 class SortedTypes extends PureComponent {
   render() {
-    const {types, searchWord, declarations, nodeView} = this.props;
+    const {types, searchWord, declarations, builtins, nodeView} = this.props;
 
     return (
       <Types
         types={getSortedTypes(getFilteredTypes(types, searchWord))}
         declarations={declarations}
+        builtins={builtins}
         nodeView={nodeView}
       />
     );
@@ -110,7 +150,7 @@ class SortedTypes extends PureComponent {
 class Modules extends PureComponent {
   render() {
     const {
-      modules, searchWord, declarations, nodeView
+      modules, searchWord, declarations, builtins, nodeView
     } = this.props;
 
     const preparedModules = Object.entries(modules)
@@ -130,6 +170,7 @@ class Modules extends PureComponent {
                   <Types
                     types={types}
                     declarations={declarations}
+                    builtins={builtins}
                     nodeView={nodeView}
                   />
                 </div>
@@ -229,7 +270,7 @@ export class Root extends PureComponent {
   }
 
   render() {
-    const {types, declarations, modules} = this.props;
+    const {types, declarations, modules, builtins} = this.props;
     const {
       searchWord,
       showDirectories,
@@ -263,6 +304,7 @@ export class Root extends PureComponent {
                 modules={modules}
                 searchWord={searchWord}
                 declarations={declarations}
+                builtins={builtins}
                 nodeView={nodeView}
               />
             ) : (
@@ -270,6 +312,7 @@ export class Root extends PureComponent {
                 types={allTypes}
                 searchWord={searchWord}
                 declarations={declarations}
+                builtins={builtins}
                 nodeView={nodeView}
               />
             )
@@ -281,6 +324,7 @@ export class Root extends PureComponent {
                   modules={modules}
                   searchWord={searchWord}
                   declarations={declarations}
+                  builtins={builtins}
                   nodeView={nodeView}
                 />
               ))

@@ -9,7 +9,7 @@ const ce = '}';
 
 export class Node extends PureComponent {
   getAssets(node) {
-    const {parameters, args, node: currentNode, parent, declarations, nodeView} = this.props;
+    const {parameters, args, node: currentNode, parent, declarations, builtins, nodeView} = this.props;
 
     const constructedParameters = args ? args
       .reduce((acc, arg, index) => Object.assign(
@@ -26,6 +26,7 @@ export class Node extends PureComponent {
       parent: args ? parent : currentNode,
       parameters: constructedParameters,
       declarations,
+      builtins,
       nodeView
     }
   }
@@ -72,8 +73,8 @@ export class Node extends PureComponent {
   };
 
   render() {
-    const {node, render, declarations, parent} = this.props;
-    const declaration = declarations[node.declarationId];
+    const {node, render, declarations, parent, builtins} = this.props;
+    const declaration = declarations[node.declarationId] || (builtins ? builtins[node.declarationId] : undefined);
 
     switch (node.type) {
       case 'type':

@@ -3,7 +3,7 @@ const {
   getTypeDeclaration
 } = require('./declarations');
 const {getDeepDeclarations, declarationToTemplate} = require('./assembly');
-const {memoize, declarationByType} = require('./utils');
+const {declarationByType} = require('./utils');
 
 
 const getTypesNames = (path, files) => (
@@ -25,15 +25,17 @@ const getModules = (path, files) => files[path]
       .map((node) => getTypeIdFromNode(node.type === 'DeclareExportDeclaration' ? node : node.declaration || node))
   }));
 
-const getTypeIdFromNode = memoize((node) => {
+const getTypeIdFromNode = (node) => {
   const {name, parameters} = getDeclarationFromNode(node);
 
   return {name, parameters};
-});
+};
 
 
 const getModulesFiles = (files) => Object.entries(files)
-  .map(([path, file]) => [path, file && file.filter(({type}) => type === 'DeclareModule')])
+  .filter(([path, file]) => file)
+  .map(([path, file]) => [path, file.filter(({type}) => type === 'DeclareModule')])
+  .filter(([path, file]) => file.length)
   .reduce((acc, [path, file]) => Object.assign(acc, file
     .filter(({type}) => type !== 'EmptyStatement')
     .filter((declaration) => declaration.type === 'DeclareModule')
@@ -46,7 +48,8 @@ const getModulesFiles = (files) => Object.entries(files)
   ), {});
 
 const getCommonFiles = (files) => Object.entries(files)
-  .map(([path, file]) => [path, file && file.filter(({type}) => type !== 'DeclareModule')])
+  .filter(([path, file]) => file)
+  .map(([path, file]) => [path, file.filter(({type}) => type !== 'DeclareModule')])
   .reduce((acc, [path, file]) => Object.assign(acc,
     acc,
     {

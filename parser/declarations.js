@@ -1,11 +1,10 @@
 const {
-  memoize,
   declarationByType,
   specifierByLocalName
 } = require('./utils');
 
 
-const getDeclarationFromNode = memoize((node) => {
+const getDeclarationFromNode = (node) => {
   let declaration;
   let name;
 
@@ -41,7 +40,7 @@ const getDeclarationFromNode = memoize((node) => {
   ) : [];
 
   return {name, parameters, declaration};
-});
+};
 
 const declarationByTypeId = (typeId) => (node) => {
   const nodeId = getDeclarationFromNode(node);
@@ -51,7 +50,7 @@ const declarationByTypeId = (typeId) => (node) => {
   );
 };
 
-const getTypeDeclaration = memoize((typeId, path, files) => {
+const getTypeDeclaration = (typeId, path, files) => {
   const fileASTNodeArray = files[path];
 
   if (!fileASTNodeArray) {
@@ -100,7 +99,7 @@ const getTypeDeclaration = memoize((typeId, path, files) => {
       declaration
     };
   }
-});
+};
 
 module.exports = {
   getDeclarationFromNode,

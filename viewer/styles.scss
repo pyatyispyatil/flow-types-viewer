@@ -11,6 +11,7 @@ body {
 
 .header {
   padding: $space;
+  min-height: 75px;
 }
 
 .root {
@@ -51,8 +52,19 @@ body {
 }
 
 .path {
-  padding: 51px 0 14px 0;
+  padding: 14px 0 14px 0;
   font-size: 14px;
+  cursor: pointer;
+
+  &:before {
+    content: '- '
+  }
+
+  &.collapsed {
+    &:before {
+      content: '+ '
+    }
+  }
 }
 
 .moduleName {

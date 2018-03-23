@@ -1,5 +1,5 @@
 const {getTypeDeclaration} = require('./declarations');
-const {memoize, isNotPrimitiveType} = require('./utils');
+const {isNotPrimitiveType} = require('./utils');
 
 const typeToTypeId = (type) => ({
   name: type.name || type.genericName,
@@ -37,25 +37,33 @@ const expandArraysAndObjects = (detailedTypes, acc = []) => detailedTypes
 
 const getDeepDeclarations = (typeId, path, files, acc = {}) => {
   const typeDeclaration = getTypeDeclaration(typeId, path, files);
-  const detailedType = declarationToTemplate(typeDeclaration, files);
 
-  if (!acc[typeDeclaration.key]) {
-    acc[typeDeclaration.key] = detailedType;
+  if (typeDeclaration) {
+    const detailedType = declarationToTemplate(typeDeclaration, files);
 
-    if (Array.isArray(detailedType.value)) {
-      return expandArraysAndObjects([detailedType])
-        .filter(isNotPrimitiveType)
-        .filter(({name, genericName}) => name || genericName)
-        .reduce((acc, item) => getDeepDeclarations(item.id || typeToTypeId(item), item.path, files, acc), acc);//ToDo: parameters
+    if (!acc[typeDeclaration.key]) {
+      acc[typeDeclaration.key] = detailedType;
+
+      if (Array.isArray(detailedType.value)) {
+        return expandArraysAndObjects([detailedType])
+          .filter(isNotPrimitiveType)
+          .filter(({typeParameter}) => !typeParameter)
+          .filter(({name, genericName}) => name || genericName)
+          .reduce((acc, item) => getDeepDeclarations(item.id || typeToTypeId(item), item.path, files, acc), acc);//ToDo: parameters
+      }
     }
-
-    return acc;
   }
 
   return acc;
 };
 
-const getTypeDeclarationMeta = memoize((typeId, path, files) => {
+const getTypeDeclarationMeta = (typeId, parameters, path, files) => {
+  if (parameters && parameters.includes(typeId.name)) {
+    return {
+      typeParameter: true
+    }
+  }
+
   if (path) {
     const typeDeclaration = getTypeDeclaration(typeId, path, files);
 
@@ -64,33 +72,45 @@ const getTypeDeclarationMeta = memoize((typeId, path, files) => {
         declarationId: typeDeclaration.key,
         path: typeDeclaration.path
       };
+    } else if (typeId.name !== 'this') {
+      return {
+        declarationId: `${typeId.name}:${typeId.parameters.join('.')}:global`,
+        path: 'global',
+        builtin: true
+      }
     }
   }
 
-  return {
-    builtin: true
-  };
-});
+  return {};
+};
 
-const declarationToTemplate = memoize((typeDeclaration, files) => {
+const declarationToTemplate = (typeDeclaration, files) => {
   const {declaration, id, path} = typeDeclaration;
 
-  return declaration ? Object.assign(
-    typeToTemplate(declaration.right || declaration, path, files),
-    {
-      id,
-      path,
-      parameters: declaration.typeParameters && declaration.typeParameters.params
-        .map(({name}) => ({
-          type: 'typeParameter',
-          name
-        }))
-    }
-  ) : {id};
-});
+  if (declaration) {
+    const parameters = declaration.typeParameters && declaration.typeParameters.params
+      .map(({name}) => ({
+        type: 'typeParameter',
+        name
+      }));
+    const newDeclaration = declaration.right || declaration;
 
-const typeToTemplate = memoize((type, path, files) => {
-  const mapTypes = (types) => types.map((type) => typeToTemplate(type, path, files));
+    return Object.assign(
+      typeToTemplate(path, files, parameters && parameters.map(({name}) => name), newDeclaration),
+      {
+        id,
+        path,
+        parameters
+      }
+    )
+  } else {
+    return {id};
+  }
+};
+
+const typeToTemplate = (path, files, parameters, type) => {
+  const carryTypeToTemplate = (type) => typeToTemplate(path, files, parameters, type);
+  const mapTypes = (types) => types.map((type) => carryTypeToTemplate(type));
 
   switch (type.type) {
     case 'NumberTypeAnnotation':
@@ -135,7 +155,7 @@ const typeToTemplate = memoize((type, path, files) => {
           value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
           genericName: type.id && type.id.name
         },
-        getTypeDeclarationMeta({name: type.id && type.id.name, parameters: []}, path, files)
+        getTypeDeclarationMeta({name: type.id && type.id.name, parameters: []}, parameters, path, files)
       );
     case 'IntersectionTypeAnnotation':
       return {
@@ -153,15 +173,15 @@ const typeToTemplate = memoize((type, path, files) => {
         value: [
           ...type.indexers.map((index) => ({
             propType: 'indexer',
-            key: typeToTemplate(index.key, path, files),
-            value: typeToTemplate(index.value, path, files)
+            key: carryTypeToTemplate(index.key),
+            value: carryTypeToTemplate(index.value)
           })),
-          ...type.properties.map((prop) => Object.assign(typeToTemplate(prop.value, path, files), {
+          ...type.properties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
             propType: 'prop',
             optional: prop.optional,
             key: prop.key.name || `"${prop.key.value}"`
           })),
-          ...type.callProperties.map((prop) => Object.assign(typeToTemplate(prop.value, path, files), {
+          ...type.callProperties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
             propType: 'call'
           }))
         ]
@@ -171,10 +191,11 @@ const typeToTemplate = memoize((type, path, files) => {
     case 'FunctionTypeAnnotation':
       return {
         type: 'function',
-        returnType: typeToTemplate(type.returnType, path, files),
+        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
+        returnType: carryTypeToTemplate(type.returnType),
         args: type.params.map((arg) => ({
           name: arg.name && arg.name.name,
-          value: typeToTemplate(arg.typeAnnotation, path, files)
+          value: carryTypeToTemplate(arg.typeAnnotation)
         }))
       };
     case 'DeclareVariable':
@@ -182,14 +203,14 @@ const typeToTemplate = memoize((type, path, files) => {
         type: 'variable',
         name: type.id.name,
         value: type.id.typeAnnotation && type.id.typeAnnotation.typeAnnotation ? (
-          typeToTemplate(type.id.typeAnnotation.typeAnnotation, path, files)
+          carryTypeToTemplate(type.id.typeAnnotation.typeAnnotation)
         ) : (null)
       };
     case 'ArrayTypeAnnotation':
       return {
         type: 'generic',
         name: 'Array',
-        value: [typeToTemplate(type.elementType, path, files)]
+        value: [carryTypeToTemplate(type.elementType)]
       };
     case 'VoidTypeAnnotation':
       return {
@@ -204,7 +225,7 @@ const typeToTemplate = memoize((type, path, files) => {
         type: 'mixed'
       };
     case 'DeclareClass':
-      return Object.assign(typeToTemplate(type.body, path, files), {
+      return Object.assign(carryTypeToTemplate(type.body), {
         type: 'class',
         parents: type.extends
           .map((parent) => Object.assign(
@@ -220,17 +241,17 @@ const typeToTemplate = memoize((type, path, files) => {
             getTypeDeclarationMeta({
               name: parent.id && parent.id.name,
               parameters: []
-            }, path, files)
+            }, parameters, path, files)
           ))
       });
     case 'NullableTypeAnnotation':
-      return Object.assign(typeToTemplate(type.typeAnnotation, path, files), {nullable: true});
+      return Object.assign(carryTypeToTemplate(type.typeAnnotation), {nullable: true});
     case 'TypeofTypeAnnotation':
-      return typeToTemplate(type.argument, path, files);
+      return carryTypeToTemplate(type.argument);
     case 'DeclareModuleExports':
       return {
         type: 'export',
-        value: typeToTemplate(type.typeAnnotation.typeAnnotation, path, files)
+        value: carryTypeToTemplate(type.typeAnnotation.typeAnnotation)
       };
     case 'TupleTypeAnnotation':
       return {
@@ -240,7 +261,7 @@ const typeToTemplate = memoize((type, path, files) => {
     default:
       return {type: 'NaT', value: 'NaT'};
   }
-});
+};
 
 module.exports = {
   getDeepDeclarations,

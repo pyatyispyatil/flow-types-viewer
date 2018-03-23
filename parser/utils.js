@@ -1,10 +1,17 @@
+const compareArrays = (arr1, arr2) => arr1
+  .every((arg, index) => arg === arr2[index]);
+
 const memoize = (fn) => {
   const memory = [];
 
   return (...args) => {
     const similarIndex = memory
       .findIndex(({args: memoryArgs}) => args
-        .every((arg, index) => arg === memoryArgs[index]));
+        .every((arg, index) => (
+          arg === memoryArgs[index]
+        ) || (
+          Array.isArray(arg) && Array.isArray(memoryArgs[index]) && compareArrays(arg, memoryArgs[index])
+        )));
 
     if (similarIndex > -1) {
       return memory[similarIndex].result;

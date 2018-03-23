@@ -6,9 +6,10 @@ import {Root} from './root';
 
 ReactDOM.render(
   <Root
-    types={DATA.types}
-    declarations={DATA.declarations}
-    modules={DATA.modules}
+    types={DATA.parsed.types}
+    declarations={DATA.parsed.declarations}
+    modules={DATA.parsed.modules}
+    builtins={DATA.builtins}
   />,
   document.getElementById('root')
 );
