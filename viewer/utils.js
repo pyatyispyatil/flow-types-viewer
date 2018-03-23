@@ -21,20 +21,24 @@ const rotate = (arr) => {
 };
 
 export const cutRoot = (paths) => {
-  const [separator] = paths[0].match(/(\/)|(\\)/g) || [];
-  const splitedPaths = paths
-    .map((path) => path.split(separator));
+  if (paths.length > 1) {
+    const [separator] = paths[0].match(/(\/)|(\\)/g) || [];
+    const splitedPaths = paths
+      .map((path) => path.split(separator));
 
-  return splitedPaths.map((path, index, paths) => {
-      const pathCopy = path.slice();
+    return splitedPaths.map((path, index, paths) => {
+        const pathCopy = path.slice();
 
-      for (let i = 0; i < path.length; i++) {
-        if (paths.every((anotherPath) => anotherPath[i] === path[i])) {
-          pathCopy.shift();
-        } else {
-          return pathCopy;
+        for (let i = 0; i < path.length; i++) {
+          if (paths.every((anotherPath) => anotherPath[i] === path[i])) {
+            pathCopy.shift();
+          } else {
+            return pathCopy;
+          }
         }
-      }
-    })
-    .map((path) => path.join(separator));
+      })
+      .map((path) => path.join(separator));
+  }
+
+  return paths;
 };

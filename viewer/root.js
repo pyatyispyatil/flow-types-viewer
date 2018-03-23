@@ -1,4 +1,5 @@
 import React, {Fragment, PureComponent} from 'react';
+import Autocomplete from 'react-autocomplete';
 
 import styles from './styles.scss';
 import {StaticTree} from './static-tree';
@@ -8,7 +9,11 @@ import {cn, cutRoot} from './utils';
 
 const compareById = ({id: {name: fName, parameters: fParameters}},
                      {id: {name: sName, parameters: sParameters}}) => fName.localeCompare(sName) || fParameters.length - sParameters.length;
+
 const byFirst = ([first], [second]) => first.localeCompare(second);
+
+const getModulesByName = (modules, searchName) => Object.entries(modules)
+  .filter(([name]) => name.toLowerCase().indexOf(searchName.toLowerCase()) === 0);
 
 const getSortedTypesEntries = (typesEntries) =>
   typesEntries
@@ -25,11 +30,51 @@ const getSortedTypes = (types) => types.slice().sort(compareById);
 
 const getFilteredTypes = (types, searchWord) => (
   searchWord ? (
-    types.filter(({id: {name}}) => name.toLowerCase().indexOf(searchWord) === 0)
+    types.filter(({id: {name}}) => name.toLowerCase().indexOf(searchWord.toLowerCase()) === 0)
   ) : (
     types
   )
 );
+
+class Modules extends PureComponent {
+  render() {
+    const {
+      modules, searchWord, declarations, builtins, nodeView, entries
+    } = this.props;
+
+    const preparedModules = searchWord ? (
+      (entries || Object.entries(modules))
+        .map(([name, types]) => [name, getSortedTypes(getFilteredTypes(types, searchWord))])
+        .filter(([, types]) => types.length)
+    ) : (
+      entries || Object.entries(modules)
+    );
+
+    return preparedModules.length ? (
+      <div>
+        {
+          preparedModules.map(([name, types]) => {
+            return (
+              <div>
+                <div className={styles.moduleName}>
+                  {name}
+                </div>
+                <div className={styles.moduleBody}>
+                  <Types
+                    types={types}
+                    declarations={declarations}
+                    builtins={builtins}
+                    nodeView={nodeView}
+                  />
+                </div>
+              </div>
+            )
+          })
+        }
+      </div>
+    ) : null
+  }
+}
 
 class Directory extends PureComponent {
   state = {
@@ -37,18 +82,19 @@ class Directory extends PureComponent {
   };
 
   render() {
-    const {modules, searchWord, declarations, builtins, nodeView, path, types, title} = this.props;
+    const {modules, declarations, builtins, searchWord, nodeView, path, types, title, forceOpen} = this.props;
     const {collapsed} = this.state;
+    const preparedModulesEntries = modules[path] && getModulesByName(modules[path], searchWord);
 
     return (
       <div>
         <div className={cn(styles.path, {
-          [styles.collapsed]: collapsed
+          [styles.collapsed]: collapsed && !forceOpen
         })} onClick={() => this.setState({collapsed: !collapsed})}>
           {title}
         </div>
         {
-          !this.state.collapsed ? (
+          !collapsed || forceOpen ? (
             <Fragment>
               <Types
                 types={types}
@@ -57,10 +103,9 @@ class Directory extends PureComponent {
                 nodeView={nodeView}
               />
               {
-                modules[path] ? (
+                preparedModulesEntries && preparedModulesEntries.length ? (
                   <Modules
-                    modules={modules[path]}
-                    searchWord={searchWord}
+                    entries={preparedModulesEntries}
                     declarations={declarations}
                     builtins={builtins}
                     nodeView={nodeView}
@@ -78,27 +123,32 @@ class Directories extends PureComponent {
   render() {
     const {typesEntries, modules, searchWord, declarations, builtins, nodeView} = this.props;
     const entries = getSortedTypesEntries(typesEntries);
-
-    //const root = entries.reduce((acc, [path]) => path., '');
-    const paths = entries.map(([path]) => path);
+    const filteredEntries = entries
+      .map(([path, pathTypes]) => [path, getFilteredTypes(pathTypes, searchWord)])
+      .filter(([path, pathTypes]) => (
+        pathTypes.length
+      ) || (
+        modules[path] && getModulesByName(modules[path], searchWord).length
+      ));
+    const paths = filteredEntries.map(([path]) => path);
     const rootlessPaths = cutRoot(paths);
 
-    return entries
-      .map(([path, pathTypes], index) => {
-        const filteredTypes = getFilteredTypes(pathTypes, searchWord);
-
-        return filteredTypes.length ? (
+    return filteredEntries
+      .map(([path, pathTypes], index, entries) => (
           <Directory
+            key={path}
             modules={modules}
+            searchWord={searchWord}
             declarations={declarations}
             builtins={builtins}
             nodeView={nodeView}
             title={rootlessPaths[index]}
             path={path}
-            types={filteredTypes}
+            types={pathTypes}
+            forceOpen={entries.length === 1}
           />
-        ) : (null)
-      })
+        )
+      )
   }
 }
 
@@ -111,6 +161,7 @@ class Types extends PureComponent {
         {
           nodeView.flatMode ? (
             <StaticTree
+              key={type.id && type.id.name}
               declarations={declarations}
               builtins={builtins}
               node={type}
@@ -119,6 +170,7 @@ class Types extends PureComponent {
             />
           ) : (
             <ExpandableTree
+              key={type.id && type.id.name}
               declarations={declarations}
               builtins={builtins}
               node={type}
@@ -144,42 +196,6 @@ class SortedTypes extends PureComponent {
         nodeView={nodeView}
       />
     );
-  }
-}
-
-class Modules extends PureComponent {
-  render() {
-    const {
-      modules, searchWord, declarations, builtins, nodeView
-    } = this.props;
-
-    const preparedModules = Object.entries(modules)
-      .map(([name, types]) => [name, getSortedTypes(getFilteredTypes(types, searchWord))])
-      .filter(([, types]) => types.length);
-
-    return preparedModules.length ? (
-      <div>
-        {
-          preparedModules.map(([name, types]) => {
-            return (
-              <div>
-                <div className={styles.moduleName}>
-                  {name}
-                </div>
-                <div className={styles.moduleBody}>
-                  <Types
-                    types={types}
-                    declarations={declarations}
-                    builtins={builtins}
-                    nodeView={nodeView}
-                  />
-                </div>
-              </div>
-            )
-          })
-        }
-      </div>
-    ) : null
   }
 }
 
@@ -219,7 +235,20 @@ export class Root extends PureComponent {
         </div>
         <div className={styles.toolbar}>
           <div className={styles.search}>
-            Search: <input autoFocus onChange={(e) => this.setState({searchWord: e.target.value.toLowerCase()})}/>
+            Search: <Autocomplete
+            autoFocus
+            onChange={(e) => this.setState({searchWord: e.target.value})}
+            shouldItemRender={({id: {name}}, value) => name.toLowerCase().indexOf(value.toLowerCase()) > -1}
+            getItemValue={({id: {name}}) => name}
+            items={allTypes}
+            renderItem={(item, isHighlighted) =>
+              <div style={{background: isHighlighted ? 'lightgray' : 'white'}}>
+                {item.id.name}
+              </div>
+            }
+            value={searchWord}
+            onSelect={(val) => this.setState({searchWord: val})}
+          />
           </div>
           <div className={styles.verticalToolbar}>
             <Checkbox

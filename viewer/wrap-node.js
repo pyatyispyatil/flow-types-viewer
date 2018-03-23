@@ -12,7 +12,7 @@ export class WrapNode extends PureComponent {
   handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
   render() {
-    const {node, children, className, force, parent} = this.props;
+    const {node, children, className, force, parent, forceOpen} = this.props;
     const {collapsed} = this.state;
     const canWrap = force || (node.id && node.id.name && !node.declarationId && (!node.builtin || node.genericName !== node.id.name));
     const nodeHasContent = node.value || node.args || node.returnType;
@@ -50,8 +50,8 @@ export class WrapNode extends PureComponent {
                   </div>
                 ) : null}
               </div>
-              <div className={cn(styles.nodeChildrenWrapper, {[styles.expanded]: !collapsed})}>
-                {!collapsed && nodeHasContent ? (
+              <div className={cn(styles.nodeChildrenWrapper, {[styles.expanded]: !collapsed || forceOpen})}>
+                {(!collapsed || forceOpen) && nodeHasContent ? (
                   <div className={styles.nodeChildren}>
                     {children}
                   </div>
