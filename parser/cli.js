@@ -37,9 +37,12 @@ const getFlatFiles = (paths, parentPath, acc = []) => paths.reduce((flattedDir, 
 
 const getFlowFilesPaths = (paths, cwd) => getFlatFiles(paths, cwd).filter((path) => /^.*?\.js(\.flow)?$/.test(path));
 
-const createBuildDir = (cwd, buildDir) => {
+const copyDir = (from, to) => fs.readdirSync(from)
+  .forEach((file) => fs.copyFileSync(path.resolve(from, file), path.resolve(to, file)));
+
+const createDir = (dir) => {
   try {
-    fs.mkdirSync(path.resolve(cwd, buildDir));
+    fs.mkdirSync(dir);
   } catch (err) {
 
   }
@@ -49,7 +52,7 @@ const run = async (...args) => {
   const cwd = process.cwd();
   const [options, ...argsPaths] = args.reverse();
   const isTextMode = options.text;
-  const buildDir = options.buildDir;
+  const buildDir = path.resolve(cwd, options.buildDir);
   let builtinsData;
 
   try {
@@ -87,19 +90,12 @@ const run = async (...args) => {
 
     if (isTextMode) {
       console.log(dataJson)
-    } else if (options.json) {
-      const jsonPath = path.resolve(cwd, options.json === true ? './output.json' : options.json);
+    } else {
+      const jsonPath = path.resolve(cwd, !options.json ? path.resolve(buildDir, './data.json') : options.json);
 
+      createDir(buildDir);
       fs.writeFileSync(jsonPath, dataJson);
       console.log(`${jsonPath} was created`);
-    } else {
-      const html = fs.readFileSync('./template.html').toString().replace(/{{data}}/igm, dataJson);
-      const htmlPath = path.resolve(cwd, buildDir, 'index.html');
-
-      createBuildDir(cwd, buildDir);
-
-      fs.writeFileSync(htmlPath, html);
-      console.log(`${htmlPath} was created`);
     }
 
     if (options.viewer) {
@@ -107,10 +103,9 @@ const run = async (...args) => {
       console.log('Node modules installed');
       exec('npm run build');
 
-      createBuildDir(cwd, buildDir);
+      createDir(buildDir);
+      copyDir('./dist', buildDir);
 
-      fs.copyFileSync('./build/viewer.js', path.resolve(cwd, buildDir, 'viewer.js'));
-      fs.copyFileSync('./build/viewer.css', path.resolve(cwd, buildDir, 'viewer.css'));
       console.log('Viewer ready');
     }
   } catch (error) {

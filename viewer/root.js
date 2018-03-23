@@ -270,7 +270,7 @@ export class Root extends PureComponent {
   }
 
   render() {
-    const {types, declarations, modules, builtins} = this.props;
+    const {types, declarations, modules, builtins, loading} = this.props;
     const {
       searchWord,
       showDirectories,
@@ -292,45 +292,51 @@ export class Root extends PureComponent {
         {
           this.renderHeader(allTypes)
         }
-        <div className={cn(
-          styles.root, {
-            [styles.nestingVisualization]: nestingVisualization
-          }
-        )}>
-          {
-            showDirectories ? (
-              <Directories
-                typesEntries={typesEntries}
-                modules={modules}
-                searchWord={searchWord}
-                declarations={declarations}
-                builtins={builtins}
-                nodeView={nodeView}
-              />
-            ) : (
-              <SortedTypes
-                types={allTypes}
-                searchWord={searchWord}
-                declarations={declarations}
-                builtins={builtins}
-                nodeView={nodeView}
-              />
-            )
-          }
-          {
-            !showDirectories && modulesEntries.length ? (
-              modulesEntries.map(([, modules]) => (
-                <Modules
-                  modules={modules}
-                  searchWord={searchWord}
-                  declarations={declarations}
-                  builtins={builtins}
-                  nodeView={nodeView}
-                />
-              ))
-            ) : null
-          }
-        </div>
+        {
+          loading ? (
+            <div className={styles.loader}>Loading...</div>
+          ) : (
+            <div className={cn(
+              styles.root, {
+                [styles.nestingVisualization]: nestingVisualization
+              }
+            )}>
+              {
+                showDirectories ? (
+                  <Directories
+                    typesEntries={typesEntries}
+                    modules={modules}
+                    searchWord={searchWord}
+                    declarations={declarations}
+                    builtins={builtins}
+                    nodeView={nodeView}
+                  />
+                ) : (
+                  <SortedTypes
+                    types={allTypes}
+                    searchWord={searchWord}
+                    declarations={declarations}
+                    builtins={builtins}
+                    nodeView={nodeView}
+                  />
+                )
+              }
+              {
+                !showDirectories && modulesEntries.length ? (
+                  modulesEntries.map(([, modules]) => (
+                    <Modules
+                      modules={modules}
+                      searchWord={searchWord}
+                      declarations={declarations}
+                      builtins={builtins}
+                      nodeView={nodeView}
+                    />
+                  ))
+                ) : null
+              }
+            </div>
+          )
+        }
       </div>
     )
   }
