@@ -8,8 +8,7 @@
     "start": "node index.js",
     "build": "parcel build index.html --public-url \".\"",
     "watch": "parcel watch index.html --public-url \".\"",
-    "builtins": "node ./cli.js --builtins",
-    "pages": "./builtins --builtins -v"
+    "builtins": "node ./cli.js ./builtins --builtins -v"
   },
   "author": "Nikolay Ryabov",
   "license": "ISC",

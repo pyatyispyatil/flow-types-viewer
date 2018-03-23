@@ -52,7 +52,7 @@ const run = async (...args) => {
   const cwd = process.cwd();
   const [options, ...argsPaths] = args.reverse();
   const isTextMode = options.text;
-  const buildDir = path.resolve(cwd, options.buildDir);
+  const buildDir = path.resolve(cwd, options.output);
   let builtinsData;
 
   try {
