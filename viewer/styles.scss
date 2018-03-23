@@ -1,5 +1,5 @@
 $space: 4px;
-$propTab: 12px;
+$tab: 12px;
 
 body {
   font-family: monospace;
@@ -46,18 +46,23 @@ body {
 }
 
 .types {
-  padding-top: 10px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .path {
-  padding: 51px 6px 14px 6px;
+  padding: 51px 0 14px 0;
   font-size: 14px;
 }
 
 .moduleName {
-  padding: $space;
+  padding: 12px 0 12px 0;
   font-weight: bold;
   font-size: 16px;
+}
+
+.moduleBody {
+  padding-left: $tab;
 }
 
 .nodeTitle {
@@ -127,7 +132,7 @@ body {
 }
 
 .typeObjectChildren {
-  padding-left: $propTab;
+  padding-left: $tab;
 }
 
 .typeObjectProp {
@@ -187,7 +192,7 @@ body {
   display: flex;
 
   &.typeFunctionManyArgs {
-    padding-left: $propTab;
+    padding-left: $tab;
   }
 
   &:not(:last-child) {
@@ -234,6 +239,7 @@ body {
 
 .typeClassName {
   display: flex;
+  padding-right: $space;
 
   &:before {
     content: 'class';
@@ -241,14 +247,13 @@ body {
   }
 }
 
-.typeObjectParent {
+.typeClassParent {
   display: flex;
   padding-right: $space;
 
   &:before {
     content: 'extends';
     padding-right: $space;
-    padding-left: $space;
   }
 }
 
@@ -267,5 +272,20 @@ body {
   &:before {
     content: ':';
     padding-right: $space;
+  }
+}
+
+.typeTuple {
+  display: flex;
+}
+
+.typeTupleItem {
+  display: flex;
+
+  &:not(:first-child) {
+    &:before {
+      content: ',';
+      padding-right: $space;
+    }
   }
 }

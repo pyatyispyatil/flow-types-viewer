@@ -165,7 +165,7 @@ export class Node extends PureComponent {
               </div>
               {
                 node.parents.length ? (
-                  <div className={styles.typeObjectParent}>
+                  <div className={styles.typeClassParent}>
                     {
                       node.parents.map((parent) => render(this.getAssets(parent)))
                     }
@@ -213,21 +213,35 @@ export class Node extends PureComponent {
           )
         }
       case 'export':
+        const valueDeclaration = declarations[node.value && node.value.declarationId];
+
         return (
           <div className={styles.typeExport}>
             {
-              render(Object.assign(this.getAssets(declarations[node.value.declarationId]), {parent: null}))
+              render(Object.assign(this.getAssets(valueDeclaration || node.value), {parent: null}))
             }
           </div>
         );
+      case 'tuple':
+        return (
+          <div className={styles.typeTuple}>
+            [
+            {
+              node.value
+                .map((val) => (
+                  render(Object.assign(this.getAssets(val), {className: styles.typeTupleItem}))
+                ))
+            }
+            ]
+          </div>
+        );
+      case 'numberLiteral':
       case 'primitive':
         return node.value;
-      case 'void':
-        return <div className={styles.void}>void</div>;
+      case 'booleanLiteral':
+        return node.value ? 'true' : 'false';
       case 'stringLiteral':
         return `"${node.value}"`;
-      case 'any':
-        return <div className={styles.any}>any</div>;
       case 'variable':
         return (
           <div className={styles.typeVariable}>
@@ -243,8 +257,13 @@ export class Node extends PureComponent {
             }
           </div>
         );
+      case 'void':
+      case 'any':
+      case 'mixed':
+      case 'null':
+        return <div className={styles[node.type]}>{node.type}</div>;
       default:
-        return node.value || 'unhandled';
+        return 'unhandled';
     }
   }
 }

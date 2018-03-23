@@ -55,7 +55,7 @@ const getDeepDeclarations = (typeId, path, files, acc = {}) => {
   return acc;
 };
 
-const getTypeDeclarationMeta = (typeId, path, files) => {
+const getTypeDeclarationMeta = memoize((typeId, path, files) => {
   if (path) {
     const typeDeclaration = getTypeDeclaration(typeId, path, files);
 
@@ -70,7 +70,7 @@ const getTypeDeclarationMeta = (typeId, path, files) => {
   return {
     builtin: true
   };
-};
+});
 
 const declarationToTemplate = memoize((typeDeclaration, files) => {
   const {declaration, id, path} = typeDeclaration;
@@ -89,7 +89,7 @@ const declarationToTemplate = memoize((typeDeclaration, files) => {
   ) : {id};
 });
 
-const typeToTemplate = (type, path, files) => {
+const typeToTemplate = memoize((type, path, files) => {
   const mapTypes = (types) => types.map((type) => typeToTemplate(type, path, files));
 
   switch (type.type) {
@@ -204,7 +204,7 @@ const typeToTemplate = (type, path, files) => {
         type: 'mixed'
       };
     case 'DeclareClass':
-      return Object.assign(typeToTemplate(type.body), {
+      return Object.assign(typeToTemplate(type.body, path, files), {
         type: 'class',
         parents: type.extends
           .map((parent) => Object.assign(
@@ -240,7 +240,7 @@ const typeToTemplate = (type, path, files) => {
     default:
       return {type: 'NaT', value: 'NaT'};
   }
-};
+});
 
 module.exports = {
   getDeepDeclarations,

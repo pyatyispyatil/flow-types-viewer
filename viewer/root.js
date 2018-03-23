@@ -29,11 +29,11 @@ const getFilteredTypes = (types, searchWord) => (
   ) : (
     types
   )
-)//.filter(({type}) => type === 'variable');
+);
 
 class Directories extends PureComponent {
   render() {
-    const {typesEntries, searchWord, declarations, nodeView} = this.props;
+    const {typesEntries, modules, searchWord, declarations, nodeView} = this.props;
 
     return getSortedTypesEntries(typesEntries)
       .map(([path, pathTypes]) => {
@@ -49,6 +49,16 @@ class Directories extends PureComponent {
               declarations={declarations}
               nodeView={nodeView}
             />
+            {
+              modules[path] ? (
+                <Modules
+                  modules={modules[path]}
+                  searchWord={searchWord}
+                  declarations={declarations}
+                  nodeView={nodeView}
+                />
+              ) : null
+            }
           </div>
         ) : (null)
       })
@@ -100,44 +110,35 @@ class SortedTypes extends PureComponent {
 class Modules extends PureComponent {
   render() {
     const {
-      files, searchWord, declarations, nodeView
+      modules, searchWord, declarations, nodeView
     } = this.props;
 
-    return (
+    const preparedModules = Object.entries(modules)
+      .map(([name, types]) => [name, getSortedTypes(getFilteredTypes(types, searchWord))])
+      .filter(([, types]) => types.length);
+
+    return preparedModules.length ? (
       <div>
         {
-          files.map(([path, modules]) => {
-            const preparedModules = Object.entries(modules)
-              .map(([name, types]) => [name, getSortedTypes(getFilteredTypes(types, searchWord))])
-              .filter(([, types]) => types.length);
-
-            return preparedModules.length ? (
+          preparedModules.map(([name, types]) => {
+            return (
               <div>
-                <div className={styles.path}>
-                  {path}
+                <div className={styles.moduleName}>
+                  {name}
                 </div>
-                {
-                  preparedModules.map(([name, types]) => {
-                    return (
-                      <div>
-                        <div className={styles.moduleName}>
-                          {name}
-                        </div>
-                        <Types
-                          types={types}
-                          declarations={declarations}
-                          nodeView={nodeView}
-                        />
-                      </div>
-                    )
-                  })
-                }
+                <div className={styles.moduleBody}>
+                  <Types
+                    types={types}
+                    declarations={declarations}
+                    nodeView={nodeView}
+                  />
+                </div>
               </div>
-            ) : null
+            )
           })
         }
       </div>
-    )
+    ) : null
   }
 }
 
@@ -186,7 +187,7 @@ export class Root extends PureComponent {
             >
               Flat mode
             </Checkbox>
-{/*            <div className={cn(styles.verticalToolbar, {[styles.hidden]: !nodeView.flatMode})}>
+            {/*            <div className={cn(styles.verticalToolbar, {[styles.hidden]: !nodeView.flatMode})}>
               <Checkbox
                 value={nodeView.flatIntersections}
                 onChange={(value) => this.changeNodeView('flatIntersections', value)}
@@ -259,6 +260,7 @@ export class Root extends PureComponent {
             showDirectories ? (
               <Directories
                 typesEntries={typesEntries}
+                modules={modules}
                 searchWord={searchWord}
                 declarations={declarations}
                 nodeView={nodeView}
@@ -273,13 +275,15 @@ export class Root extends PureComponent {
             )
           }
           {
-            modulesEntries && modulesEntries.length ? (
-              <Modules
-                files={modulesEntries}
-                searchWord={searchWord}
-                declarations={declarations}
-                nodeView={nodeView}
-              />
+            !showDirectories && modulesEntries.length ? (
+              modulesEntries.map(([, modules]) => (
+                <Modules
+                  modules={modules}
+                  searchWord={searchWord}
+                  declarations={declarations}
+                  nodeView={nodeView}
+                />
+              ))
             ) : null
           }
         </div>

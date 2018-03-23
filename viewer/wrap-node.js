@@ -16,6 +16,7 @@ export class WrapNode extends PureComponent {
     const {collapsed} = this.state;
     const canWrap = force || (node.id && node.id.name && !node.declarationId && (!node.builtin || node.genericName !== node.id.name));
     const nodeHasContent = node.value || node.args || node.returnType;
+    const nullable = node.nullable;
 
     return (
       <div className={cn(styles.treeView, className)}>
@@ -23,6 +24,10 @@ export class WrapNode extends PureComponent {
           canWrap ? (
             <Fragment>
               <div className={styles.nodeTitle} onClick={this.handleClick}>
+                {
+                  nullable ?
+                    '?' : ''
+                }
                 {
                   parent && parent.id && parent.id.name && node.id && node.id.name ? (
                     <div className={styles.nodeParentTitle}>
