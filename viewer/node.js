@@ -52,6 +52,11 @@ export class Node extends PureComponent {
       case 'prop':
         return (
           <div className={styles.typeObjectProp}>
+            {
+              prop.static ?
+                <div className={styles.typeObjectStatic}/>
+                : null
+            }
             <div className={styles.typeObjectKey}>
               {prop.key}
             </div>

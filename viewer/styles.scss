@@ -18,7 +18,7 @@ body {
   padding-left: 8px;
 
   &.nestingVisualization {
-    .typeObject, .typeObjectProp, .typeParametrizedGeneric, .typeIntersectionItem, .typeFunctionArg {
+    .typeObject, .typeObjectProp, .typeParametrizedGeneric, .typeIntersectionItem, .typeFunctionArg, .typeClass {
       &:hover {
         background: rgba(100, 100, 100, 0.1);
       }
@@ -162,6 +162,13 @@ body {
 
 .typeObjectProp {
   display: flex;
+}
+
+.typeObjectStatic {
+  &:before {
+    content: 'static';
+    padding-right: $space;
+  }
 }
 
 .typeObjectIndexKey {

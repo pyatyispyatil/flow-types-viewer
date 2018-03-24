@@ -179,7 +179,8 @@ const typeToTemplate = (path, files, parameters, type) => {
           ...type.properties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
             propType: 'prop',
             optional: prop.optional,
-            key: prop.key.name || `"${prop.key.value}"`
+            key: prop.key.name || `"${prop.key.value}"`,
+            'static': prop.static
           })),
           ...type.callProperties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
             propType: 'call'
