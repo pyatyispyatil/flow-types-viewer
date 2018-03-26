@@ -250,14 +250,14 @@ export class Root extends PureComponent {
             onSelect={(val) => this.setState({searchWord: val})}
           />
           </div>
-          <div className={styles.verticalToolbar}>
+{/*          <div className={styles.verticalToolbar}>
             <Checkbox
               value={nodeView.flatMode}
               onChange={(value) => this.changeNodeView('flatMode', value)}
             >
               Flat mode
             </Checkbox>
-            {/*            <div className={cn(styles.verticalToolbar, {[styles.hidden]: !nodeView.flatMode})}>
+            <div className={cn(styles.verticalToolbar, {[styles.hidden]: !nodeView.flatMode})}>
               <Checkbox
                 value={nodeView.flatIntersections}
                 onChange={(value) => this.changeNodeView('flatIntersections', value)}
@@ -270,8 +270,8 @@ export class Root extends PureComponent {
               >
                 Flat Objects
               </Checkbox>
-            </div>*/}
-          </div>
+            </div>
+          </div>*/}
           <Checkbox
             value={showDirectories}
             onChange={(showDirectories) => this.setState({showDirectories})}
