@@ -48,6 +48,24 @@ const createDir = (dir) => {
   }
 };
 
+const getState = () => {
+  let state;
+
+  try {
+    state = JSON.parse(fs.readFileSync('./state.json'));
+  } catch(error) {
+    state = {};
+  }
+
+  return state;
+};
+
+const setState = (state) => {
+  let currentState = getState();
+
+  fs.writeFileSync('./state.json', JSON.stringify(Object.assign(currentState, state)));
+};
+
 const run = async (...args) => {
   const cwd = process.cwd();
   const [options, ...argsPaths] = args.reverse();
@@ -99,8 +117,15 @@ const run = async (...args) => {
     }
 
     if (options.viewer) {
-      exec('npm i');
-      console.log('Node modules installed');
+      const state = getState();
+
+      if (!state.node_modules_installed) {
+        console.log('node_modules installation');
+        exec('npm i');
+        console.log('node_modules installed');
+        setState({node_modules_installed: true});
+      }
+
       exec('npm run build');
 
       createDir(buildDir);
