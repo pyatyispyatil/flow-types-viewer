@@ -214,6 +214,18 @@ const declarationToTemplate = (path, files, parameters, declaration) => {
       };
     case 'ExistsTypeAnnotation':
       return {type: 'exists', value: '*'};
+    case 'DeclareTypeAlias':
+      const functionDeclaration = declaration.right;
+
+      return {
+        type: 'function',
+        typeParameters: functionDeclaration.typeParameters ? mapDeclarations(functionDeclaration.typeParameters.params) : null,
+        returnType: carryDeclarationToTemplate(functionDeclaration.returnType),
+        args: functionDeclaration.params.map((arg) => ({
+          name: arg.name && arg.name.name,
+          value: carryDeclarationToTemplate(arg.typeAnnotation)
+        }))
+      };
     case 'FunctionTypeAnnotation':
       return {
         type: 'function',

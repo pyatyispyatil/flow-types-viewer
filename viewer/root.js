@@ -12,18 +12,21 @@ const compareById = ({id: {name: fName, typeParameters: fParameters = []}},
 
 const byFirst = ([first], [second]) => first.localeCompare(second);
 
-const getModulesByName = (modules, searchName) => Object.entries(modules)
-  .filter(([name]) => name.toLowerCase().indexOf(searchName.toLowerCase()) === 0);
+const getModulesOrTypesByName = (modules, searchName) => Object.entries(modules)
+  .filter(([name, types]) => (
+    name.toLowerCase().indexOf(searchName.toLowerCase()) === 0
+  ) || (
+    types.some(({id: {name}}) => name.toLowerCase().indexOf(searchName.toLowerCase()) === 0)
+  ));
 
 const getSortedTypesEntries = (typesEntries) =>
   typesEntries
-    .reduce((acc, [path, pathTypes]) => [
-      ...acc,
+    .map(([path, pathTypes]) =>
       [
         path,
-        pathTypes.slice().sort(compareById)
+        getSortedTypes(pathTypes)
       ]
-    ], [])
+    )
     .sort(byFirst);
 
 const getSortedTypes = (types) => types.slice().sort(compareById);
@@ -84,7 +87,7 @@ class Directory extends PureComponent {
   render() {
     const {modules, declarations, builtins, searchWord, nodeView, path, types, title, forceOpen} = this.props;
     const {collapsed} = this.state;
-    const preparedModulesEntries = modules[path] && getModulesByName(modules[path], searchWord);
+    const preparedModulesEntries = modules[path] && getModulesOrTypesByName(modules[path], searchWord);
 
     return (
       <div>
@@ -107,6 +110,7 @@ class Directory extends PureComponent {
                   <Modules
                     entries={preparedModulesEntries}
                     declarations={declarations}
+                    searchWord={searchWord}
                     builtins={builtins}
                     nodeView={nodeView}
                   />
@@ -121,14 +125,13 @@ class Directory extends PureComponent {
 
 class Directories extends PureComponent {
   render() {
-    const {typesEntries, modules, searchWord, declarations, builtins, nodeView} = this.props;
-    const entries = getSortedTypesEntries(typesEntries);
+    const {entries, modules, searchWord, declarations, builtins, nodeView} = this.props;
     const filteredEntries = entries
       .map(([path, pathTypes]) => [path, getFilteredTypes(pathTypes, searchWord)])
       .filter(([path, pathTypes]) => (
         pathTypes.length
       ) || (
-        modules[path] && getModulesByName(modules[path], searchWord).length
+        modules[path] && getModulesOrTypesByName(modules[path], searchWord).length
       ));
     const paths = filteredEntries.map(([path]) => path);
     const rootlessPaths = cutRoot(paths);
@@ -184,21 +187,6 @@ class Types extends PureComponent {
   }
 }
 
-class SortedTypes extends PureComponent {
-  render() {
-    const {types, searchWord, declarations, builtins, nodeView} = this.props;
-
-    return (
-      <Types
-        types={getSortedTypes(getFilteredTypes(types, searchWord))}
-        declarations={declarations}
-        builtins={builtins}
-        nodeView={nodeView}
-      />
-    );
-  }
-}
-
 export class Root extends PureComponent {
   state = {
     searchWord: '',
@@ -209,7 +197,44 @@ export class Root extends PureComponent {
       flatObjects: false
     },
     nestingVisualization: true,
+    cache: {
+      sortedTypes: [],
+      allTypes: [],
+      modulesEntries: [],
+      sortedTypesEntries: []
+    }
   };
+
+  componentDidMount() {
+    this.cacheData(this.props);
+  }
+
+  componentWillReceiveProps(props) {
+    this.cacheData(props);
+  }
+
+  cacheData({types, modules}) {
+    const typesEntries = types ? Object.entries(types) : [];
+    const modulesEntries = modules ? Object.entries(modules) : [];
+    const modulesTypesEntries = modulesEntries
+      .map(([path, module]) => Object.entries(module)
+        .reduce((acc, [name, types]) => [...acc, ...types]), []);
+    const sortedTypes = getSortedTypes(typesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), []));
+    const allTypes = getSortedTypes([
+      ...modulesTypesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), []),
+      ...sortedTypes
+    ]);
+    const sortedTypesEntries = getSortedTypesEntries(typesEntries);
+
+    this.setState({
+      cache: {
+        allTypes,
+        sortedTypes,
+        modulesEntries,
+        sortedTypesEntries
+      }
+    })
+  }
 
   changeNodeView(name, value) {
     this.setState({
@@ -224,8 +249,7 @@ export class Root extends PureComponent {
     const {
       searchWord,
       showDirectories,
-      nestingVisualization,
-      nodeView
+      nestingVisualization
     } = this.state;
 
     return (
@@ -250,7 +274,7 @@ export class Root extends PureComponent {
             onSelect={(val) => this.setState({searchWord: val})}
           />
           </div>
-{/*          <div className={styles.verticalToolbar}>
+          {/*          <div className={styles.verticalToolbar}>
             <Checkbox
               value={nodeView.flatMode}
               onChange={(value) => this.changeNodeView('flatMode', value)}
@@ -299,22 +323,19 @@ export class Root extends PureComponent {
   }
 
   render() {
-    const {types, declarations, modules, builtins, loading} = this.props;
+    const {declarations, modules, builtins, loading} = this.props;
     const {
       searchWord,
       showDirectories,
       nestingVisualization,
-      nodeView
+      nodeView,
+      cache: {
+        allTypes,
+        modulesEntries,
+        sortedTypesEntries,
+        sortedTypes
+      }
     } = this.state;
-    const typesEntries = types ? Object.entries(types) : [];
-    const modulesEntries = modules ? Object.entries(modules) : [];
-    const modulesTypesEntries = modulesEntries
-      .map(([path, module]) => Object.entries(module)
-        .reduce((acc, [name, types]) => [...acc, ...types]), []);
-    const allTypes = [
-      ...modulesTypesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), []),
-      ...typesEntries.reduce((acc, [path, pathTypes]) => acc.concat(pathTypes), [])
-    ];
 
     return (
       <div className={styles.base}>
@@ -333,7 +354,7 @@ export class Root extends PureComponent {
               {
                 showDirectories ? (
                   <Directories
-                    typesEntries={typesEntries}
+                    entries={sortedTypesEntries}
                     modules={modules}
                     searchWord={searchWord}
                     declarations={declarations}
@@ -341,9 +362,8 @@ export class Root extends PureComponent {
                     nodeView={nodeView}
                   />
                 ) : (
-                  <SortedTypes
-                    types={allTypes}
-                    searchWord={searchWord}
+                  <Types
+                    types={getFilteredTypes(sortedTypes, searchWord)}
                     declarations={declarations}
                     builtins={builtins}
                     nodeView={nodeView}
