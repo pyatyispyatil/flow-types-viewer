@@ -7,8 +7,8 @@ import {ExpandableTree} from './expandable-tree';
 import {Checkbox} from './components';
 import {cn, cutRoot} from './utils';
 
-const compareById = ({id: {name: fName, parameters: fParameters}},
-                     {id: {name: sName, parameters: sParameters}}) => fName.localeCompare(sName) || fParameters.length - sParameters.length;
+const compareById = ({id: {name: fName, typeParameters: fParameters = []}},
+                     {id: {name: sName, typeParameters: sParameters = []}}) => fName.localeCompare(sName) || fParameters.length - sParameters.length;
 
 const byFirst = ([first], [second]) => first.localeCompare(second);
 
