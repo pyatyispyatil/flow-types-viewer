@@ -2,17 +2,17 @@ const {
   getDeclarationFromNode,
   getTypeDeclaration
 } = require('./declarations');
-const {getDeepDeclarations, declarationToTemplate} = require('./assembly');
+const {getDeepDeclarations, typeDeclarationToTemplate} = require('./assembly');
 const {declarationByType} = require('./utils');
 
 
 const getTypesNames = (path, files) => (
   files[path]
     .filter(({type}) => type !== 'EmptyStatement')
-    .filter(declarationByType('TypeAlias', 'ExportNamedDeclaration', 'DeclareFunction', 'DeclareClass'))
+    .filter(declarationByType('TypeAlias', 'ExportNamedDeclaration', 'DeclareFunction', 'DeclareClass', 'InterfaceDeclaration', 'DeclareInterface'))
     .map((node) => node.type === 'TypeAlias' || !node.declaration ? node : node.declaration)
     .map(getDeclarationFromNode)
-    .map(({name, parameters}) => ({name, parameters}))
+    .map(({name, parametersCount}) => ({name, parametersCount}))
 );
 
 const getModules = (path, files) => files[path]
@@ -26,9 +26,9 @@ const getModules = (path, files) => files[path]
   }));
 
 const getTypeIdFromNode = (node) => {
-  const {name, parameters} = getDeclarationFromNode(node);
+  const {name, parametersCount} = getDeclarationFromNode(node);
 
-  return {name, parameters};
+  return {name, parametersCount};
 };
 
 
@@ -93,7 +93,7 @@ const parse = (paths, files) => {
       preparedFiles
     );
 
-    return declarationToTemplate(typeDeclaration, preparedFiles)
+    return typeDeclarationToTemplate(typeDeclaration, preparedFiles)
   });
 
   return {

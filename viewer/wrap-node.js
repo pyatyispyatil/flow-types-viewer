@@ -12,10 +12,10 @@ export class WrapNode extends PureComponent {
   handleClick = () => this.setState({collapsed: !this.state.collapsed});
 
   render() {
-    const {node, children, className, force, parent, forceOpen} = this.props;
+    const {node, children, className, force, parent, forceOpen, renderedArgs} = this.props;
     const {collapsed} = this.state;
-    const canWrap = force || (node.id && node.id.name && !node.declarationId && (!node.builtin || node.genericName !== node.id.name));
     const nodeHasContent = node.value || node.args || node.returnType;
+    const canWrap = force || (node.id && node.id.name && nodeHasContent);
     const nullable = node.nullable;
 
     return (
@@ -23,32 +23,44 @@ export class WrapNode extends PureComponent {
         {
           canWrap ? (
             <Fragment>
-              <div className={styles.nodeTitle} onClick={this.handleClick}>
+              <div className={styles.nodeTitle}>
+                <div className={styles.nodeName} onClick={this.handleClick}>
                 {
                   nullable ?
                     '?' : ''
                 }
+                {node.id && node.id.name}
+                </div>
                 {
-                  parent && parent.id && parent.id.name && node.id && node.id.name ? (
-                    <div className={styles.nodeParentTitle}>
-                      {parent.id.name}
+                  renderedArgs ? (
+                    <div className={styles.typeParametrizedGenericArguments}>
+                      {'<'}
+                      {
+                        renderedArgs.map((arg) => (
+                          <div className={styles.typeParametrizedGenericArgument}>
+                            {arg}
+                          </div>
+                        ))
+                      }
+                      {'>'}
                     </div>
                   ) : null
                 }
-                {node.id && node.id.name}
-                {node.parameters ? (
-                  <div className={styles.typeParametrizedGenericArguments}>
-                    {'<'}
-                    {
-                      node.parameters.map(({name}) => (
-                        <div className={styles.typeParametrizedGenericArgument}>
-                          {name}
-                        </div>
-                      ))
-                    }
-                    {'>'}
-                  </div>
-                ) : null}
+                {
+                  !renderedArgs && node.typeParameters ? (
+                    <div className={styles.typeParametrizedGenericArguments}>
+                      {'<'}
+                      {
+                        node.typeParameters.map(({name}) => (
+                          <div className={styles.typeParametrizedGenericArgument}>
+                            {name}
+                          </div>
+                        ))
+                      }
+                      {'>'}
+                    </div>
+                  ) : null
+                }
               </div>
               <div className={cn(styles.nodeChildrenWrapper, {[styles.expanded]: !collapsed || forceOpen})}>
                 {(!collapsed || forceOpen) && nodeHasContent ? (

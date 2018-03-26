@@ -1,4 +1,4 @@
-$space: 4px;
+$space: 5px;
 $tab: 12px;
 
 body {
@@ -91,8 +91,12 @@ body {
 }
 
 .nodeTitle {
-  font-weight: bold;
   display: flex;
+}
+
+.nodeName {
+  display: flex;
+  font-weight: bold;
 }
 
 .nodeParentTitle {
@@ -140,7 +144,17 @@ body {
 }
 
 .typeDeclaration {
-  font-weight: bold;
+  display: flex;
+}
+
+.typeDeclarationName {
+  padding-right: $space;
+  display: flex;
+
+  &:after {
+    content: '=';
+    padding-left: $space;
+  }
 }
 
 .typeObject {
@@ -272,11 +286,7 @@ body {
 .typeClassName {
   display: flex;
   padding-right: $space;
-
-  &:before {
-    content: 'class';
-    padding-right: $space;
-  }
+  padding-left: $space;
 }
 
 .typeClassParent {

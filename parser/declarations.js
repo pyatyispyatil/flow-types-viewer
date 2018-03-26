@@ -20,7 +20,7 @@ const getDeclarationFromNode = (node) => {
   } else if (node.type === 'ImportDeclaration') {
     return {
       name: null,
-      parameters: [],
+      parametersCount: 0,
       declaration: null
     }
   } else if (node.type === 'DeclareModuleExports' || node.type === 'DeclareExportDeclaration') {
@@ -35,19 +35,17 @@ const getDeclarationFromNode = (node) => {
     );
   }
 
-  const parameters = declaration.typeParameters ? (
-    declaration.typeParameters.params.map(({name}) => name)
-  ) : [];
+  const parametersCount = declaration.typeParameters ?
+    declaration.typeParameters.params.length : 0;
 
-  return {name, parameters, declaration};
+  return {name, parametersCount, declaration};
 };
 
 const declarationByTypeId = (typeId) => (node) => {
   const nodeId = getDeclarationFromNode(node);
 
-  return typeId.name === nodeId.name && (
-    typeId.parameters.every((param, index) => nodeId.parameters[index] === param)
-  );
+  return typeId.name === nodeId.name
+    && typeId.parametersCount === nodeId.parametersCount;
 };
 
 const getTypeDeclaration = (typeId, path, files) => {
@@ -78,7 +76,7 @@ const getTypeDeclaration = (typeId, path, files) => {
         return getTypeDeclaration(
           {
             name: specifier.imported.name,
-            parameters: typeId.parameters
+            parametersCount: typeId.parametersCount
           },
           matchedImport.source.value,
           files
@@ -86,15 +84,15 @@ const getTypeDeclaration = (typeId, path, files) => {
       }
     }
   } else {
-    const {name, declaration, parameters = typeId.parameters} = getDeclarationFromNode(localType);
-    const key = `${name}:${parameters.join('.')}:${path}`;
+    const {name, declaration, parametersCount = typeId.parametersCount} = getDeclarationFromNode(localType);
+    const key = `${name}:${parametersCount}:${path}`;
 
     return {
       path,
       key,
       id: {
         name: name || typeId.name,
-        parameters
+        parametersCount
       },
       declaration
     };

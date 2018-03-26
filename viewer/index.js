@@ -11,7 +11,10 @@ class Loader extends PureComponent {
   };
 
   componentDidMount() {
-    axios.get('data.json').then(({data}) => this.setState({data, loading: false}));
+    axios.get('data.json').then(({data}) => {
+      window.data = data;
+      this.setState({data, loading: false})
+    });
   }
 
   render() {

@@ -7,23 +7,65 @@ import {cn} from './utils';
 const cs = '{';
 const ce = '}';
 
+const getParametersMap = (typeParameters, parameters) => typeParameters
+  .reduce((acc, typeParameter, index) => parameters[index] ? Object.assign(
+    acc, {
+      [typeParameter.name || typeParameter.id.name]: parameters[index]
+    }) : acc, {});
+
+const replaceGenericsParameters = (parameters, node) => {
+  if (parameters[node.name || (node.id && node.id.name)]) {
+    return parameters[node.name || (node.id && node.id.name)];
+  }
+
+  const getNode = (val) => parameters[val.name || (val.id && val.id.name)] || replaceGenericsParameters(parameters, val);
+  const mapNodes = (nodes) => nodes
+    .map(getNode);
+
+  return {
+    ...node,
+    value: Array.isArray(node.value) ? mapNodes(node.value) : (node.value && node.value.type ? getNode(node.value) : node.value),
+    typeParameters: node.typeParameters && mapNodes(node.typeParameters)
+  }
+};
+
 export class Node extends PureComponent {
+  getParameters(node) {
+    const {parameters, declarations, builtins} = this.props;
+    const {typeParameters} = node;
+    const declaration = declarations[node.declarationId] || (builtins ? builtins[node.declarationId] : undefined);
+
+    const translatedTypeParameters = parameters && typeParameters ? (
+      typeParameters.map((node) => replaceGenericsParameters(parameters, node))
+    ) : typeParameters;
+
+    return declaration && declaration.typeParameters && translatedTypeParameters ? (
+      getParametersMap(declaration.typeParameters, translatedTypeParameters)
+    ) : (
+      parameters
+    );
+  }
+
   getAssets(node) {
-    const {parameters, args, node: currentNode, parent, declarations, builtins, nodeView} = this.props;
+    const {typeParameters} = node;
+    const {node: currentNode, parameters, parent, declarations, builtins, nodeView, render} = this.props;
+    const declaration = declarations[node.declarationId] || (builtins ? builtins[node.declarationId] : undefined);
 
-    const constructedParameters = args ? args
-      .reduce((acc, arg, index) => Object.assign(
-        acc, {
-          [currentNode.parameters[index].name]: arg
-        }), {}) : parameters;
+    let constructedParameters = this.getParameters(node);
 
-    const newNode = parent && constructedParameters ? (
-      (constructedParameters[node.id ? node.id.name : node.genericName]) || node
-    ) : node;
+    const newNode = constructedParameters ? (
+      constructedParameters[node.name || (node.id && node.id.name)] || declaration || node
+    ) : declaration || node;
+
+    const translatedTypeParameters = constructedParameters && typeParameters ? (
+      typeParameters.map((param) => constructedParameters[param.name || (param.id && param.id.name)] || param)
+    ) : typeParameters;
 
     return {
+      renderedArgs: translatedTypeParameters && translatedTypeParameters
+        .map((arg) => render(this.getAssets(parameters ? replaceGenericsParameters(parameters, arg) : arg))),
       node: newNode,
-      parent: args ? parent : currentNode,
+      parent: currentNode.typeParameters ? currentNode : parent,
       parameters: constructedParameters,
       declarations,
       builtins,
@@ -77,22 +119,49 @@ export class Node extends PureComponent {
     }
   };
 
+  renderGenericParameters() {
+    const {node, render, args} = this.props;
+    const parameters = this.getParameters(node);
+    const items = args || node.typeParameters;
+
+    return items && items.length ? (
+      <div className={styles.typeParametrizedGenericArguments}>
+        {'<'}
+        {
+          items.map((val) => (
+            <div className={styles.typeParametrizedGenericArgument}>
+              {render(this.getAssets(parameters[val.id ? val.id.name : val.name] || val))}
+            </div>
+          ))
+        }
+        {'>'}
+      </div>
+    ) : null;
+  }
+
+  getDeclaration(node) {
+    const {declarations, builtins} = this.props;
+
+    return declarations[node.declarationId] || (builtins ? builtins[node.declarationId] : undefined);
+  }
+
   render() {
-    const {node, render, declarations, parent, builtins} = this.props;
-    const declaration = declarations[node.declarationId] || (builtins ? builtins[node.declarationId] : undefined);
+    const {node, render, declarations, parent, parameters} = this.props;
+    const declaration = this.getDeclaration(node);
 
     switch (node.type) {
       case 'type':
-        if (declaration) {
-          return render(this.getAssets(declaration));
-        } else {
-          return <div className={styles.typeDeclaration}>{(node.id && node.id.name) || node.genericName}</div>
-        }
+        return (
+          <div className={styles.typeDeclaration}>
+            {/*<div className={styles.typeDeclarationName}>{node.id && node.id.name}{this.renderGenericParameters()}</div>*/}
+            <div className={styles.typeDeclarationValue}>{render(this.getAssets(node.value))}</div>
+          </div>
+        );
       case 'generic':
-        if (declaration && node.value) {
+        if (declaration) {
           return (
             <div className={styles.typeParametrizedGeneric}>
-              {render(Object.assign(this.getAssets(declaration), {args: node.value}))}
+              {render(this.getAssets(node, declaration))}
             </div>
           )
         } else {
@@ -104,19 +173,7 @@ export class Node extends PureComponent {
                 name
               }
               {
-                name ? (
-                  <div className={styles.typeParametrizedGenericArguments}>
-                    {'<'}
-                    {
-                      node.value.map((val) => (
-                        <div className={styles.typeParametrizedGenericArgument}>
-                          {render(this.getAssets(val))}
-                        </div>
-                      ))
-                    }
-                    {'>'}
-                  </div>
-                ) : null
+                name ? this.renderGenericParameters() : null
               }
             </div>
           );
@@ -160,15 +217,20 @@ export class Node extends PureComponent {
             {ce}
           </div>
         );
+      case 'interface':
       case 'class':
         return (
           <div className={styles.typeClass}>
             <div className={styles.typeClassHeader}>
+              {
+                node.type
+              }
               <div className={styles.typeClassName}>
                 {
                   node.id.name
                 }
               </div>
+              {this.renderGenericParameters()}
               {
                 node.parents.length ? (
                   <div className={styles.typeClassParent}>
@@ -198,6 +260,7 @@ export class Node extends PureComponent {
 
           return (
             <div className={cn(styles.typeFunction, manyArgsStyles)}>
+              {this.renderGenericParameters()}
               <div className={cn(styles.typeFunctionArgs, manyArgsStyles)}>
                 (
                 {
@@ -268,6 +331,12 @@ export class Node extends PureComponent {
       case 'mixed':
       case 'null':
         return <div className={styles[node.type]}>{node.type}</div>;
+      case 'typeParameter':
+        return parameters && parameters[node.name] ? (
+          render(this.getAssets(parameters[node.name]))
+        ) : node.name || null;
+      case 'exists':
+        return '*';
       default:
         return 'unhandled';
     }

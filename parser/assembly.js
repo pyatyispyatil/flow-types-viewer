@@ -3,7 +3,7 @@ const {isNotPrimitiveType} = require('./utils');
 
 const typeToTypeId = (type) => ({
   name: type.name || type.genericName,
-  parameters: type.parameters ? type.parameters.map(({name}) => name) : []
+  parametersCount: type.typeParameters ? type.typeParameters.length : 0
 });
 
 const expandArraysAndObjects = (detailedTypes, acc = []) => detailedTypes
@@ -39,7 +39,7 @@ const getDeepDeclarations = (typeId, path, files, acc = {}) => {
   const typeDeclaration = getTypeDeclaration(typeId, path, files);
 
   if (typeDeclaration) {
-    const detailedType = declarationToTemplate(typeDeclaration, files);
+    const detailedType = typeDeclarationToTemplate(typeDeclaration, files);
 
     if (!acc[typeDeclaration.key]) {
       acc[typeDeclaration.key] = detailedType;
@@ -58,7 +58,7 @@ const getDeepDeclarations = (typeId, path, files, acc = {}) => {
 };
 
 const getTypeDeclarationMeta = (typeId, parameters, path, files) => {
-  if (parameters && parameters.includes(typeId.name)) {
+  if (parameters && parameters.some(({name}) => typeId.name === name)) {
     return {
       typeParameter: true
     }
@@ -74,7 +74,7 @@ const getTypeDeclarationMeta = (typeId, parameters, path, files) => {
       };
     } else if (typeId.name !== 'this') {
       return {
-        declarationId: `${typeId.name}:${typeId.parameters.join('.')}:global`,
+        declarationId: `${typeId.name}:${typeId.parametersCount}:global`,
         path: 'global',
         builtin: true
       }
@@ -84,35 +84,53 @@ const getTypeDeclarationMeta = (typeId, parameters, path, files) => {
   return {};
 };
 
-const declarationToTemplate = (typeDeclaration, files) => {
+const typeDeclarationToTemplate = (typeDeclaration, files) => {
   const {declaration, id, path} = typeDeclaration;
 
   if (declaration) {
-    const parameters = declaration.typeParameters && declaration.typeParameters.params
-      .map(({name}) => ({
-        type: 'typeParameter',
-        name
-      }));
-    const newDeclaration = declaration.right || declaration;
-
     return Object.assign(
-      typeToTemplate(path, files, parameters && parameters.map(({name}) => name), newDeclaration),
-      {
-        id,
-        path,
-        parameters
-      }
-    )
+      declarationToAssetedTemplate(declaration, path, files),
+      {id}
+    );
   } else {
     return {id};
   }
 };
 
-const typeToTemplate = (path, files, parameters, type) => {
-  const carryTypeToTemplate = (type) => typeToTemplate(path, files, parameters, type);
-  const mapTypes = (types) => types.map((type) => carryTypeToTemplate(type));
+const declarationToAssetedTemplate = (declaration, path, files, parentParameters = null) => {
+  const declarationParameters = declaration.typeParameters && declaration.typeParameters.params
+    .map((param) => declarationToAssetedTemplate(param, path, files));
+  const parameters = declarationParameters ? declarationParameters : parentParameters;
 
-  switch (type.type) {
+  return Object.assign(
+    declarationToTemplate(path, files, parameters, declaration),
+    {
+      path,
+      typeParameters: declarationParameters,
+      id: {
+        name: declaration.id && declaration.id.name,
+        parametersCount: (declarationParameters && declarationParameters.length) || 0
+      }
+    }
+  )
+};
+
+const declarationToTemplate = (path, files, parameters, declaration) => {
+  const carryDeclarationToTemplate = (declaration) => declarationToAssetedTemplate(
+    declaration,
+    path,
+    files,
+    parameters,
+  );
+  const mapDeclarations = (declarations) => declarations
+    .map((declaration) => carryDeclarationToTemplate(declaration));
+  const typeId = {
+    name: declaration.id && declaration.id.name,
+    parametersCount: (declaration.typeParameters && declaration.typeParameters.params.length) || 0
+  };
+
+
+  switch (declaration.type) {
     case 'NumberTypeAnnotation':
       return {
         type: 'primitive',
@@ -131,58 +149,65 @@ const typeToTemplate = (path, files, parameters, type) => {
     case 'BooleanLiteralTypeAnnotation':
       return {
         type: 'booleanLiteral',
-        value: type.value
+        value: declaration.value
       };
     case 'NumberLiteralTypeAnnotation':
       return {
         type: 'numberLiteral',
-        value: type.value
+        value: declaration.value
       };
     case 'StringLiteralTypeAnnotation':
       return {
         type: 'stringLiteral',
-        value: type.value
+        value: declaration.value
       };
     case 'NullLiteralTypeAnnotation':
       return {
         type: 'null',
         value: 'null'
       };
+    case 'TypeAlias':
+      return Object.assign(
+        {
+          type: 'type',
+          value: carryDeclarationToTemplate(declaration.right)
+        },
+        getTypeDeclarationMeta(typeId, parameters, path, files)
+      );
     case 'GenericTypeAnnotation':
       return Object.assign(
         {
-          type: type.typeParameters ? 'generic' : 'type',
-          value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
-          genericName: type.id && type.id.name
+          type: 'generic',
+          typeParameters: declaration.typeParameters ? mapDeclarations(declaration.typeParameters.params) : null
         },
-        getTypeDeclarationMeta({name: type.id && type.id.name, parameters: []}, parameters, path, files)
+        getTypeDeclarationMeta(typeId, parameters, path, files)
       );
     case 'IntersectionTypeAnnotation':
       return {
         type: 'intersection',
-        value: mapTypes(type.types)
+        value: mapDeclarations(declaration.types)
       };
     case 'UnionTypeAnnotation':
       return {
         type: 'union',
-        value: mapTypes(type.types)
+        value: mapDeclarations(declaration.types)
       };
     case 'ObjectTypeAnnotation':
       return {
         type: 'object',
         value: [
-          ...type.indexers.map((index) => ({
+          ...declaration.indexers.map((index) => ({
             propType: 'indexer',
-            key: carryTypeToTemplate(index.key),
-            value: carryTypeToTemplate(index.value)
+            key: carryDeclarationToTemplate(index.key),
+            value: carryDeclarationToTemplate(index.value)
           })),
-          ...type.properties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
+          ...declaration.properties.map((prop) => Object.assign(carryDeclarationToTemplate(prop.value), {
             propType: 'prop',
             optional: prop.optional,
             key: prop.key.name || `"${prop.key.value}"`,
             'static': prop.static
           })),
-          ...type.callProperties.map((prop) => Object.assign(carryTypeToTemplate(prop.value), {
+          ...declaration.callProperties.map((prop) => Object.assign(carryDeclarationToTemplate(prop.value), {
             propType: 'call'
           }))
         ]
@@ -192,26 +217,26 @@ const typeToTemplate = (path, files, parameters, type) => {
     case 'FunctionTypeAnnotation':
       return {
         type: 'function',
-        value: type.typeParameters ? mapTypes(type.typeParameters.params) : null,
-        returnType: carryTypeToTemplate(type.returnType),
-        args: type.params.map((arg) => ({
+        typeParameters: declaration.typeParameters ? mapDeclarations(declaration.typeParameters.params) : null,
+        returnType: carryDeclarationToTemplate(declaration.returnType),
+        args: declaration.params.map((arg) => ({
           name: arg.name && arg.name.name,
-          value: carryTypeToTemplate(arg.typeAnnotation)
+          value: carryDeclarationToTemplate(arg.typeAnnotation)
         }))
       };
     case 'DeclareVariable':
       return {
         type: 'variable',
-        name: type.id.name,
-        value: type.id.typeAnnotation && type.id.typeAnnotation.typeAnnotation ? (
-          carryTypeToTemplate(type.id.typeAnnotation.typeAnnotation)
+        name: declaration.id.name,
+        value: declaration.id.typeAnnotation && declaration.id.typeAnnotation.typeAnnotation ? (
+          carryDeclarationToTemplate(declaration.id.typeAnnotation.typeAnnotation)
         ) : (null)
       };
     case 'ArrayTypeAnnotation':
       return {
         type: 'generic',
         name: 'Array',
-        value: [carryTypeToTemplate(type.elementType)]
+        value: [carryDeclarationToTemplate(declaration.elementType)]
       };
     case 'VoidTypeAnnotation':
       return {
@@ -225,39 +250,41 @@ const typeToTemplate = (path, files, parameters, type) => {
       return {
         type: 'mixed'
       };
+    case 'InterfaceDeclaration':
+    case 'DeclareInterface':
     case 'DeclareClass':
-      return Object.assign(carryTypeToTemplate(type.body), {
-        type: 'class',
-        parents: type.extends
+      return Object.assign(carryDeclarationToTemplate(declaration.body), {
+        type: declaration.type === 'DeclareClass' ? 'class' : 'interface',
+        parents: declaration.extends
           .map((parent) => Object.assign(
             {
-              type: parent.typeParameters ? 'generic' : 'type',
-              genericName: parent.id && parent.id.name,
-              value: parent.typeParameters ? parent.typeParameters.params
-                .map((param) => ({
-                  type: 'typeParameter',
-                  name: param.name
-                })) : null,
+              type: 'generic',
+              typeParameters: parent.typeParameters && mapDeclarations(parent.typeParameters.params)
             },
             getTypeDeclarationMeta({
               name: parent.id && parent.id.name,
-              parameters: []
+              parametersCount: parent.typeParameters && parent.typeParameters.params.length
             }, parameters, path, files)
           ))
       });
     case 'NullableTypeAnnotation':
-      return Object.assign(carryTypeToTemplate(type.typeAnnotation), {nullable: true});
+      return Object.assign(carryDeclarationToTemplate(declaration.typeAnnotation), {nullable: true});
     case 'TypeofTypeAnnotation':
-      return carryTypeToTemplate(type.argument);
+      return carryDeclarationToTemplate(declaration.argument);
     case 'DeclareModuleExports':
       return {
         type: 'export',
-        value: carryTypeToTemplate(type.typeAnnotation.typeAnnotation)
+        value: carryDeclarationToTemplate(declaration.typeAnnotation.typeAnnotation)
       };
     case 'TupleTypeAnnotation':
       return {
         type: 'tuple',
-        value: mapTypes(type.types)
+        value: mapDeclarations(declaration.types)
+      };
+    case 'TypeParameter':
+      return {
+        type: 'typeParameter',
+        name: declaration.name
       };
     default:
       return {type: 'NaT', value: 'NaT'};
@@ -266,5 +293,5 @@ const typeToTemplate = (path, files, parameters, type) => {
 
 module.exports = {
   getDeepDeclarations,
-  declarationToTemplate
+  typeDeclarationToTemplate
 };
