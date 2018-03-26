@@ -130,7 +130,7 @@ export class Node extends PureComponent {
         {
           items.map((val) => (
             <div className={styles.typeParametrizedGenericArgument}>
-              {render(this.getAssets(parameters[val.id ? val.id.name : val.name] || val))}
+              {render(this.getAssets(parameters ? parameters[val.id ? val.id.name : val.name] || val : val))}
             </div>
           ))
         }
