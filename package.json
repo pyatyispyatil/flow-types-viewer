@@ -1,6 +1,6 @@
 {
   "name": "flow-types-viewer",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Util to view flow types in project",
   "main": "./index.js",
   "bin": "./cli.js",
