@@ -21,6 +21,8 @@ const rotate = (arr) => {
 };
 
 export const cutRoot = (paths) => {
+  const [separator] = paths[0] && paths[0].match(/(\/)|(\\)/g) || [];
+
   if (paths.length > 1) {
     const [separator] = paths[0].match(/(\/)|(\\)/g) || [];
     const splitedPaths = paths
@@ -38,6 +40,10 @@ export const cutRoot = (paths) => {
         }
       })
       .map((path) => path.join(separator));
+  } else if (paths.length === 1) {
+    const splitedPath = paths[0].split(separator);
+
+    return [splitedPath[splitedPath.length - 1]];
   }
 
   return paths;

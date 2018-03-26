@@ -263,7 +263,7 @@ const declarationToTemplate = (path, files, parameters, declaration) => {
             },
             getTypeDeclarationMeta({
               name: parent.id && parent.id.name,
-              parametersCount: parent.typeParameters && parent.typeParameters.params.length
+              parametersCount: parent.typeParameters ? parent.typeParameters.params.length : 0
             }, parameters, path, files)
           ))
       });
