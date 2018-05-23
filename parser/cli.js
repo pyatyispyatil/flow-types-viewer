@@ -4,6 +4,7 @@ const exec = require('child_process').execSync;
 const axios = require('axios');
 
 const getData = require('./index');
+const parserDir = path.resolve(path.parse(__filename).dir, '../');
 
 const libsRoot = 'https://raw.githubusercontent.com/facebook/flow/v0.67.0/lib/';
 const builtinsNames = [
@@ -48,24 +49,6 @@ const createDir = (dir) => {
   }
 };
 
-const getState = () => {
-  let state;
-
-  try {
-    state = JSON.parse(fs.readFileSync('./state.json'));
-  } catch(error) {
-    state = {};
-  }
-
-  return state;
-};
-
-const setState = (state) => {
-  let currentState = getState();
-
-  fs.writeFileSync('./state.json', JSON.stringify(Object.assign(currentState, state)));
-};
-
 const run = async (...args) => {
   const cwd = process.cwd();
   const [options, ...argsPaths] = args.reverse();
@@ -97,44 +80,37 @@ const run = async (...args) => {
       }
     }
 
-    const paths = getFlowFilesPaths(argsPaths, cwd);
-    const parsed = paths.length ? getData(paths) : null;
+    try {
+      const paths = getFlowFilesPaths(argsPaths, cwd);
+      const parsed = paths.length ? getData(paths) : null;
 
-    if (!isTextMode) {
-      console.log('Parsing complete');
-    }
+      if (!isTextMode) {
+        console.log('Parsing complete');
+      }
 
-    const dataJson = JSON.stringify({parsed, builtins: builtinsData});
+      const dataJson = JSON.stringify({parsed, builtins: builtinsData});
 
-    if (isTextMode) {
-      console.log(dataJson)
-    } else {
-      const jsonPath = path.resolve(cwd, !options.json ? path.resolve(buildDir, './data.json') : options.json);
+      if (isTextMode) {
+        console.log(dataJson)
+      } else {
+        const jsonPath = path.resolve(cwd, !options.json ? path.resolve(buildDir, './data.json') : options.json);
 
-      createDir(buildDir);
-      fs.writeFileSync(jsonPath, dataJson);
-      console.log(`${jsonPath} was created`);
+        createDir(buildDir);
+        fs.writeFileSync(jsonPath, dataJson);
+        console.log(`${jsonPath} was created`);
+      }
+    } catch (error) {
+      console.log('Parsing failed');
     }
 
     if (options.viewer) {
-      const state = getState();
-
-      if (!state.node_modules_installed) {
-        console.log('node_modules installation');
-        exec('npm i');
-        console.log('node_modules installed');
-        setState({node_modules_installed: true});
-      }
-
-      exec('npm run build');
-
       createDir(buildDir);
-      copyDir('./dist', buildDir);
+      copyDir(path.resolve(parserDir, './dist'), buildDir);
+      fs.copyFileSync(path.resolve(parserDir, 'server.js'), path.resolve(buildDir, 'server.js'));
 
       console.log('Viewer ready');
     }
   } catch (error) {
-    console.log('Parsing failed');
     console.error(error);
 
     throw new Error(error);
