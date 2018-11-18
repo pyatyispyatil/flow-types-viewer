@@ -36,4 +36,4 @@ flow-types-viewer ./types -b -o ./docs
 
 #### Examples
 
-Builtin types: https://gloooom.github.io/flow-types-viewer
+Builtin types: https://pyatyispyatil.github.io/flow-types-viewer
